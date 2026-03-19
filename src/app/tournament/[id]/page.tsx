@@ -96,104 +96,123 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
     };
   }, [id, fetchData]);
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Ucitavanje turnira...</div>;
-  if (!data) return <div className="text-center py-12 text-red-500">Turnir nije pronadjen</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+      <div className="text-blue-300/50 text-lg">Ucitavanje turnira...</div>
+    </div>
+  );
+  if (!data) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+      <div className="text-red-400 text-lg">Turnir nije pronadjen</div>
+    </div>
+  );
 
   const { tournament, teams, matches } = data;
   const groups = [...new Set(teams.map(t => t.group_label).filter(Boolean))].sort() as string[];
   const groupMatches = matches.filter(m => m.phase === 'group');
 
+  const tabs = [
+    { key: 'groups' as const, label: 'Grupe', icon: '📊' },
+    { key: 'matches' as const, label: 'Mecevi', icon: '⚔️' },
+    ...(tournament.status === 'elimination' || tournament.status === 'finished'
+      ? [{ key: 'bracket' as const, label: 'Eliminacije', icon: '🏆' }]
+      : []),
+  ];
+
   return (
-    <main className="max-w-6xl mx-auto px-4 py-8">
-      <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-block">
-        &larr; Nazad na listu turnira
-      </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <Link href="/" className="text-blue-300/50 hover:text-blue-300 text-sm mb-6 inline-block transition-colors">
+          &larr; Nazad na listu turnira
+        </Link>
 
-      <TournamentHeader tournament={tournament} />
+        <TournamentHeader tournament={tournament} />
 
-      {tournament.status === 'draft' && (
-        <div className="text-center text-gray-500 py-12">
-          Turnir je u pripremi. Ekipe se dodaju u admin panelu.
-        </div>
-      )}
+        {tournament.status === 'draft' && (
+          <div className="text-center py-16">
+            <div className="text-5xl mb-4 opacity-30">🎴</div>
+            <p className="text-blue-300/30 text-lg">Turnir je u pripremi. Ekipe se dodaju u admin panelu.</p>
+          </div>
+        )}
 
-      {(tournament.status === 'group_phase' || tournament.status === 'elimination' || tournament.status === 'finished') && (
-        <>
-          <div className="flex gap-2 mb-6 border-b">
-            <button
-              onClick={() => setActiveTab('groups')}
-              className={`px-4 py-2 font-medium ${activeTab === 'groups' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-            >
-              Grupe
-            </button>
-            <button
-              onClick={() => setActiveTab('matches')}
-              className={`px-4 py-2 font-medium ${activeTab === 'matches' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-            >
-              Mecevi
-            </button>
-            {(tournament.status === 'elimination' || tournament.status === 'finished') && (
-              <button
-                onClick={() => setActiveTab('bracket')}
-                className={`px-4 py-2 font-medium ${activeTab === 'bracket' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-              >
-                Eliminacije
-              </button>
+        {(tournament.status === 'group_phase' || tournament.status === 'elimination' || tournament.status === 'finished') && (
+          <>
+            {/* Tabs */}
+            <div className="flex gap-1 mb-8 bg-white/5 rounded-xl p-1 inline-flex">
+              {tabs.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    activeTab === tab.key
+                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
+                      : 'text-blue-300/50 hover:text-blue-300 hover:bg-white/5'
+                  }`}
+                >
+                  <span className="mr-1.5">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === 'groups' && (
+              <div className="grid gap-6 md:grid-cols-2 animate-fade-in">
+                {groups.map(group => (
+                  <GroupTable
+                    key={group}
+                    groupLabel={group}
+                    standings={calculateStandingsLocal(teams, matches, group)}
+                  />
+                ))}
+              </div>
             )}
-          </div>
 
-          {activeTab === 'groups' && (
-            <div className="grid gap-6 md:grid-cols-2">
-              {groups.map(group => (
-                <GroupTable
-                  key={group}
-                  groupLabel={group}
-                  standings={calculateStandingsLocal(teams, matches, group)}
-                />
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'matches' && (
-            <div className="space-y-6">
-              {groups.map(group => (
-                <div key={group}>
-                  <h3 className="text-lg font-bold mb-3">Grupa {group}</h3>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {groupMatches
-                      .filter(m => m.group_label === group)
-                      .map(match => (
-                        <MatchCard key={match.id} match={match} />
-                      ))}
+            {activeTab === 'matches' && (
+              <div className="space-y-8 animate-fade-in">
+                {groups.map(group => (
+                  <div key={group}>
+                    <h3 className="text-lg font-bold mb-4 text-blue-200">Grupa {group}</h3>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {groupMatches
+                        .filter(m => m.group_label === group)
+                        .map(match => (
+                          <MatchCard key={match.id} match={match} />
+                        ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'bracket' && (
+              <div className="animate-fade-in">
+                <Bracket matches={matches} />
+              </div>
+            )}
+          </>
+        )}
+
+        {tournament.status === 'finished' && (
+          <div className="mt-10 text-center animate-fade-in">
+            <div className="inline-block bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/30 backdrop-blur-sm rounded-2xl p-10">
+              <div className="text-5xl mb-3">🏆</div>
+              <p className="text-2xl font-bold text-yellow-300">Turnir zavrsen!</p>
+              {(() => {
+                const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
+                if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
+                  const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
+                  return winner ? (
+                    <p className="text-3xl font-extrabold bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent mt-3">
+                      {winner.name}
+                    </p>
+                  ) : null;
+                }
+                return null;
+              })()}
             </div>
-          )}
-
-          {activeTab === 'bracket' && (
-            <Bracket matches={matches} />
-          )}
-        </>
-      )}
-
-      {tournament.status === 'finished' && (
-        <div className="mt-8 text-center">
-          <div className="inline-block bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
-            <p className="text-2xl font-bold text-yellow-700">Turnir zavrsen!</p>
-            {(() => {
-              const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
-              if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
-                const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
-                return winner ? (
-                  <p className="text-3xl font-bold text-yellow-800 mt-2">Pobjednik: {winner.name}</p>
-                ) : null;
-              }
-              return null;
-            })()}
           </div>
-        </div>
-      )}
-    </main>
+        )}
+      </main>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import GroupTable from '@/components/GroupTable';
 import MatchCard from '@/components/MatchCard';
 import Bracket from '@/components/Bracket';
 import TeamForm from '@/components/TeamForm';
+import AdminLogin from '@/components/AdminLogin';
 
 interface TournamentData {
   tournament: Tournament;
@@ -55,6 +56,14 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
   const [data, setData] = useState<TournamentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    setAuthenticated(!!token);
+    setCheckingAuth(false);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -69,8 +78,8 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
   }, [id]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (authenticated) fetchData();
+  }, [fetchData, authenticated]);
 
   const handleDraw = async () => {
     setActionLoading(true);
@@ -121,8 +130,24 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
     }
   };
 
-  if (loading) return <div className="text-center py-12 text-gray-500">Ucitavanje...</div>;
-  if (!data) return <div className="text-center py-12 text-red-500">Turnir nije pronadjen</div>;
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setAuthenticated(false);
+  };
+
+  if (checkingAuth) return null;
+  if (!authenticated) return <AdminLogin onLogin={() => { setAuthenticated(true); }} />;
+
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+      <div className="text-blue-300 text-lg">Ucitavanje...</div>
+    </div>
+  );
+  if (!data) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+      <div className="text-red-400 text-lg">Turnir nije pronadjen</div>
+    </div>
+  );
 
   const { tournament, teams, matches } = data;
   const groups = [...new Set(teams.map(t => t.group_label).filter(Boolean))].sort() as string[];
@@ -130,147 +155,157 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
   const allGroupMatchesFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'finished');
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex gap-4 mb-4">
-        <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm">
-          &larr; Pocetna
-        </Link>
-        <Link href={`/tournament/${id}`} className="text-blue-600 hover:text-blue-800 text-sm">
-          Javna stranica
-        </Link>
-      </div>
-
-      <div className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 mb-4">
-        <span className="text-orange-700 font-medium">Admin panel</span>
-      </div>
-
-      <TournamentHeader tournament={tournament} />
-
-      {/* Draft phase — add teams */}
-      {tournament.status === 'draft' && (
-        <div className="space-y-6">
-          <TeamForm
-            tournamentId={id}
-            maxTeams={tournament.team_count}
-            currentCount={teams.length}
-            onTeamAdded={fetchData}
-          />
-
-          {teams.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="font-bold mb-3">Prijavljene ekipe ({teams.length}/{tournament.team_count})</h3>
-              <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                {teams.map(team => (
-                  <div key={team.id} className="bg-gray-50 rounded px-3 py-2 text-sm font-medium">
-                    {team.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {teams.length === tournament.team_count && (
-            <div className="text-center">
-              <button
-                onClick={handleDraw}
-                disabled={actionLoading}
-                className="bg-purple-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 text-lg"
-              >
-                {actionLoading ? 'Zrijeb u toku...' : 'Pokreni zrijeb'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Group phase — enter results */}
-      {tournament.status === 'group_phase' && (
-        <div className="space-y-8">
-          <div className="grid gap-6 md:grid-cols-2">
-            {groups.map(group => (
-              <GroupTable
-                key={group}
-                groupLabel={group}
-                standings={calculateStandingsLocal(teams, matches, group)}
-              />
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-4">
+            <Link href="/" className="text-blue-300 hover:text-blue-100 text-sm transition-colors">
+              &larr; Pocetna
+            </Link>
+            <Link href={`/tournament/${id}`} className="text-blue-300 hover:text-blue-100 text-sm transition-colors">
+              Javna stranica
+            </Link>
           </div>
+          <button
+            onClick={handleLogout}
+            className="text-red-400 hover:text-red-300 text-sm transition-colors"
+          >
+            Odjavi se
+          </button>
+        </div>
 
+        <div className="bg-orange-500/20 border border-orange-500/30 backdrop-blur-sm rounded-xl px-4 py-2 mb-6">
+          <span className="text-orange-300 font-medium">Admin panel</span>
+        </div>
+
+        <TournamentHeader tournament={tournament} />
+
+        {/* Draft phase — add teams */}
+        {tournament.status === 'draft' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold">Unos rezultata</h2>
-            {groups.map(group => (
-              <div key={group}>
-                <h3 className="text-lg font-bold mb-3">Grupa {group}</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {groupMatches
-                    .filter(m => m.group_label === group)
-                    .map(match => (
-                      <MatchCard
-                        key={match.id}
-                        match={match}
-                        onUpdateScore={handleUpdateScore}
-                        editable
-                      />
-                    ))}
+            <TeamForm
+              tournamentId={id}
+              maxTeams={tournament.team_count}
+              currentCount={teams.length}
+              onTeamAdded={fetchData}
+            />
+
+            {teams.length > 0 && (
+              <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+                <h3 className="font-bold mb-4 text-white">Prijavljene ekipe ({teams.length}/{tournament.team_count})</h3>
+                <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
+                  {teams.map(team => (
+                    <div key={team.id} className="bg-white/10 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 border border-white/5">
+                      {team.name}
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            )}
 
-          {allGroupMatchesFinished && (
-            <div className="text-center bg-green-50 border border-green-200 rounded-lg p-6">
-              <p className="text-green-700 font-medium mb-4">Svi mecevi grupne faze su zavrseni!</p>
-              <button
-                onClick={handleAdvance}
-                disabled={actionLoading}
-                className="bg-orange-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 text-lg"
-              >
-                {actionLoading ? 'Generisanje bracketa...' : 'Kreni u eliminacije'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Elimination phase */}
-      {(tournament.status === 'elimination' || tournament.status === 'finished') && (
-        <div className="space-y-8">
-          <div className="grid gap-6 md:grid-cols-2">
-            {groups.map(group => (
-              <GroupTable
-                key={group}
-                groupLabel={group}
-                standings={calculateStandingsLocal(teams, matches, group)}
-              />
-            ))}
-          </div>
-
-          <h2 className="text-xl font-bold">Eliminacijska faza</h2>
-          <Bracket
-            matches={matches}
-            onUpdateScore={tournament.status === 'elimination' ? handleUpdateScore : undefined}
-            editable={tournament.status === 'elimination'}
-          />
-
-          {tournament.status === 'finished' && (
-            <div className="text-center">
-              <div className="inline-block bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
-                <p className="text-2xl font-bold text-yellow-700">Turnir zavrsen!</p>
-                {(() => {
-                  const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
-                  if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
-                    const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
-                    return winner ? (
-                      <p className="text-3xl font-bold text-yellow-800 mt-2">Pobjednik: {winner.name}</p>
-                    ) : null;
-                  }
-                  return null;
-                })()}
+            {teams.length === tournament.team_count && (
+              <div className="text-center">
+                <button
+                  onClick={handleDraw}
+                  disabled={actionLoading}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-10 py-4 rounded-xl font-bold hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 text-lg transition-all shadow-lg shadow-purple-500/25"
+                >
+                  {actionLoading ? 'Zrijeb u toku...' : 'Pokreni zrijeb'}
+                </button>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Group phase — enter results */}
+        {tournament.status === 'group_phase' && (
+          <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-2">
+              {groups.map(group => (
+                <GroupTable
+                  key={group}
+                  groupLabel={group}
+                  standings={calculateStandingsLocal(teams, matches, group)}
+                />
+              ))}
             </div>
-          )}
-        </div>
-      )}
-    </main>
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-white">Unos rezultata</h2>
+              {groups.map(group => (
+                <div key={group}>
+                  <h3 className="text-lg font-bold mb-3 text-blue-200">Grupa {group}</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {groupMatches
+                      .filter(m => m.group_label === group)
+                      .map(match => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onUpdateScore={handleUpdateScore}
+                          editable
+                        />
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {allGroupMatchesFinished && (
+              <div className="text-center bg-green-500/10 border border-green-500/30 backdrop-blur-sm rounded-2xl p-8">
+                <p className="text-green-300 font-medium mb-4 text-lg">Svi mecevi grupne faze su zavrseni!</p>
+                <button
+                  onClick={handleAdvance}
+                  disabled={actionLoading}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-10 py-4 rounded-xl font-bold hover:from-orange-500 hover:to-red-500 disabled:opacity-50 text-lg transition-all shadow-lg shadow-orange-500/25"
+                >
+                  {actionLoading ? 'Generisanje bracketa...' : 'Kreni u eliminacije'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Elimination phase */}
+        {(tournament.status === 'elimination' || tournament.status === 'finished') && (
+          <div className="space-y-8">
+            <div className="grid gap-6 md:grid-cols-2">
+              {groups.map(group => (
+                <GroupTable
+                  key={group}
+                  groupLabel={group}
+                  standings={calculateStandingsLocal(teams, matches, group)}
+                />
+              ))}
+            </div>
+
+            <h2 className="text-xl font-bold text-white">Eliminacijska faza</h2>
+            <Bracket
+              matches={matches}
+              onUpdateScore={tournament.status === 'elimination' ? handleUpdateScore : undefined}
+              editable={tournament.status === 'elimination'}
+            />
+
+            {tournament.status === 'finished' && (
+              <div className="text-center">
+                <div className="inline-block bg-yellow-500/20 border-2 border-yellow-500/40 backdrop-blur-sm rounded-2xl p-8">
+                  <p className="text-2xl font-bold text-yellow-300">Turnir zavrsen!</p>
+                  {(() => {
+                    const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
+                    if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
+                      const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
+                      return winner ? (
+                        <p className="text-3xl font-bold text-yellow-200 mt-2">Pobjednik: {winner.name}</p>
+                      ) : null;
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

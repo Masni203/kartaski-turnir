@@ -35,51 +35,48 @@ export default function MatchCard({ match, onUpdateScore, editable = false }: Ma
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border-2 p-4 ${
-      isFinished ? 'border-gray-200' : isInProgress ? 'border-yellow-400' : 'border-gray-100'
+    <div className={`bg-white/5 backdrop-blur-sm border rounded-xl p-4 transition-all ${
+      isInProgress ? 'border-yellow-500/40 animate-pulse-glow' :
+      isFinished ? 'border-white/10' : 'border-white/5'
     }`}>
-      {match.group_label && (
-        <div className="text-xs text-gray-500 mb-2">
-          {phaseLabels[match.phase]} {match.group_label} &middot; Kolo {match.round}
-        </div>
-      )}
-      {!match.group_label && (
-        <div className="text-xs text-gray-500 mb-2">
-          {phaseLabels[match.phase]}
-        </div>
-      )}
+      <div className="text-xs text-blue-300/40 mb-3 font-medium">
+        {phaseLabels[match.phase]}
+        {match.group_label ? ` ${match.group_label} \u00b7 Kolo ${match.round}` : ''}
+      </div>
 
       {editable && !isFinished ? (
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <span className="flex-1 text-right font-medium truncate">{team1Name}</span>
-          <input
-            name="score1"
-            type="number"
-            min="0"
-            defaultValue={match.score1 ?? ''}
-            className="w-12 text-center border rounded px-1 py-1 text-lg font-bold"
-          />
-          <span className="text-gray-400">:</span>
-          <input
-            name="score2"
-            type="number"
-            min="0"
-            defaultValue={match.score2 ?? ''}
-            className="w-12 text-center border rounded px-1 py-1 text-lg font-bold"
-          />
-          <span className="flex-1 font-medium truncate">{team2Name}</span>
-          <div className="flex gap-1 ml-2">
+        <form onSubmit={handleSubmit}>
+          <div className="flex items-center gap-2">
+            <span className="flex-1 text-right font-medium text-white text-sm truncate">{team1Name}</span>
+            <input
+              name="score1"
+              type="number"
+              min="0"
+              defaultValue={match.score1 ?? ''}
+              className="w-12 text-center bg-white/10 border border-white/20 rounded-lg px-1 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <span className="text-white/20 font-bold">:</span>
+            <input
+              name="score2"
+              type="number"
+              min="0"
+              defaultValue={match.score2 ?? ''}
+              className="w-12 text-center bg-white/10 border border-white/20 rounded-lg px-1 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <span className="flex-1 font-medium text-white text-sm truncate">{team2Name}</span>
+          </div>
+          <div className="flex gap-2 mt-3 justify-center">
             <button
               type="submit"
               data-action="save"
-              className="px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              className="px-3 py-1.5 text-xs bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors border border-yellow-500/20 font-medium"
             >
               Snimi
             </button>
             <button
               type="submit"
               data-action="finish"
-              className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              className="px-3 py-1.5 text-xs bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors border border-green-500/20 font-medium"
             >
               Zavrsi
             </button>
@@ -87,22 +84,30 @@ export default function MatchCard({ match, onUpdateScore, editable = false }: Ma
         </form>
       ) : (
         <div className="flex items-center gap-2">
-          <span className={`flex-1 text-right font-medium truncate ${
+          <span className={`flex-1 text-right font-medium text-sm truncate ${
             isFinished && match.score1 !== null && match.score2 !== null && match.score1 > match.score2
-              ? 'text-green-700 font-bold' : ''
+              ? 'text-green-400 font-bold' : 'text-white'
           }`}>
             {team1Name}
           </span>
-          <span className={`text-2xl font-bold px-3 ${
-            isInProgress ? 'text-yellow-600' : isFinished ? 'text-gray-900' : 'text-gray-300'
+          <div className={`flex items-center gap-1 px-4 py-1 rounded-xl ${
+            isInProgress ? 'bg-yellow-500/10' : isFinished ? 'bg-white/5' : 'bg-white/[0.02]'
           }`}>
-            {match.score1 !== null ? match.score1 : '-'}
-            <span className="text-gray-400 mx-1">:</span>
-            {match.score2 !== null ? match.score2 : '-'}
-          </span>
-          <span className={`flex-1 font-medium truncate ${
+            <span className={`text-2xl font-extrabold ${
+              isInProgress ? 'text-yellow-400' : isFinished ? 'text-white' : 'text-white/20'
+            }`}>
+              {match.score1 !== null ? match.score1 : '-'}
+            </span>
+            <span className="text-white/20 mx-1 font-light">:</span>
+            <span className={`text-2xl font-extrabold ${
+              isInProgress ? 'text-yellow-400' : isFinished ? 'text-white' : 'text-white/20'
+            }`}>
+              {match.score2 !== null ? match.score2 : '-'}
+            </span>
+          </div>
+          <span className={`flex-1 font-medium text-sm truncate ${
             isFinished && match.score1 !== null && match.score2 !== null && match.score2 > match.score1
-              ? 'text-green-700 font-bold' : ''
+              ? 'text-green-400 font-bold' : 'text-white'
           }`}>
             {team2Name}
           </span>
@@ -110,16 +115,16 @@ export default function MatchCard({ match, onUpdateScore, editable = false }: Ma
       )}
 
       {isInProgress && (
-        <div className="mt-2 flex justify-center">
-          <span className="inline-flex items-center gap-1 text-xs text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full">
-            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+        <div className="mt-3 flex justify-center">
+          <span className="inline-flex items-center gap-1.5 text-xs text-yellow-400 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+            <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
             U toku
           </span>
         </div>
       )}
       {isFinished && (
-        <div className="mt-2 flex justify-center">
-          <span className="text-xs text-gray-500">Zavrseno</span>
+        <div className="mt-3 flex justify-center">
+          <span className="text-xs text-white/20">Zavrseno</span>
         </div>
       )}
     </div>
