@@ -9,6 +9,7 @@ import MatchCard from '@/components/MatchCard';
 import Bracket from '@/components/Bracket';
 import TeamForm from '@/components/TeamForm';
 import AdminLogin from '@/components/AdminLogin';
+import ShareQR from '@/components/ShareQR';
 
 interface TournamentData {
   tournament: Tournament;
@@ -179,6 +180,10 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
         </div>
 
         <TournamentHeader tournament={tournament} />
+
+        <div className="mb-6">
+          <ShareQR tournamentId={id} tournamentName={tournament.name} />
+        </div>
 
         {/* Draft phase — add teams */}
         {tournament.status === 'draft' && (
