@@ -47,7 +47,7 @@ export default function TeamForm({ tournamentId, maxTeams, currentCount, onTeamA
   if (remaining <= 0) {
     return (
       <div className="bg-green-500/10 border border-green-500/30 backdrop-blur-sm rounded-2xl p-5 text-green-300">
-        Sve ekipe su dodane! Mozete pokrenuti zrijeb.
+        Sve ekipe su dodane! Mozete pokrenuti zreb.
       </div>
     );
   }

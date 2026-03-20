@@ -59,7 +59,7 @@ export default function ShareQR({ tournamentId, tournamentName }: ShareQRProps) 
             📱
           </div>
           <div className="text-left">
-            <h3 className="font-bold text-white">Podijeli turnir</h3>
+            <h3 className="font-bold text-white">Podeli turnir</h3>
             <p className="text-xs text-emerald-300/40">QR kod za pracenje uzivo</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function ShareQR({ tournamentId, tournamentName }: ShareQRProps) 
             </div>
 
             <p className="text-emerald-300/50 text-sm text-center max-w-xs">
-              Skeniraj QR kod ili podijeli link da drugi prate turnir uzivo
+              Skeniraj QR kod ili podeli link da drugi prate turnir uzivo
             </p>
 
             {/* URL + Copy */}

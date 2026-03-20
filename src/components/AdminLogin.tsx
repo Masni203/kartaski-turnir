@@ -62,7 +62,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
             disabled={loading || !password}
             className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Provjera...' : 'Prijavi se'}
+            {loading ? 'Provera...' : 'Prijavi se'}
           </button>
         </form>
       </div>

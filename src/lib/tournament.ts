@@ -60,7 +60,7 @@ export async function drawGroups(tournamentId: string) {
 
   if (teamsErr) throw teamsErr;
   if (!teams || teams.length !== tournament.team_count) {
-    throw new Error(`Trebate tacno ${tournament.team_count} ekipa za zrijeb. Trenutno: ${teams?.length || 0}`);
+    throw new Error(`Trebate tacno ${tournament.team_count} ekipa za zreb. Trenutno: ${teams?.length || 0}`);
   }
 
   const shuffled = shuffle(teams);

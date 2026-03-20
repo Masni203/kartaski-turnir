@@ -29,7 +29,7 @@ export default function Bracket({ matches, onUpdateScore, editable = false }: Br
   if (eliminationMatches.length === 0) {
     return (
       <div className="text-center text-blue-300/30 py-12 text-lg">
-        Eliminacijska faza jos nije pocela
+        Eliminaciona faza jos nije pocela
       </div>
     );
   }

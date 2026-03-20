@@ -88,7 +88,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
       const res = await fetch(`/api/tournaments/${id}/draw`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || 'Greska pri zrijebu');
+        alert(data.error || 'Greska pri zrebu');
         return;
       }
       fetchData();
@@ -215,7 +215,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                   disabled={actionLoading}
                   className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-10 py-4 rounded-xl font-bold hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 text-lg transition-all shadow-lg shadow-purple-500/25"
                 >
-                  {actionLoading ? 'Zrijeb u toku...' : 'Pokreni zrijeb'}
+                  {actionLoading ? 'Zreb u toku...' : 'Pokreni zreb'}
                 </button>
               </div>
             )}
@@ -284,7 +284,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
               ))}
             </div>
 
-            <h2 className="text-xl font-bold text-white">Eliminacijska faza</h2>
+            <h2 className="text-xl font-bold text-white">Eliminaciona faza</h2>
             <Bracket
               matches={matches}
               onUpdateScore={tournament.status === 'elimination' ? handleUpdateScore : undefined}
@@ -300,7 +300,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                     if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
                       const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
                       return winner ? (
-                        <p className="text-3xl font-bold text-yellow-200 mt-2">Pobjednik: {winner.name}</p>
+                        <p className="text-3xl font-bold text-yellow-200 mt-2">Pobednik: {winner.name}</p>
                       ) : null;
                     }
                     return null;

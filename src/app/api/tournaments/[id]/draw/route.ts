@@ -11,7 +11,7 @@ export async function POST(
     const result = await drawGroups(id);
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Greska pri zrijebu';
+    const message = err instanceof Error ? err.message : 'Greska pri zrebu';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
