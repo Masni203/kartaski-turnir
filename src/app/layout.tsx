@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kartaski Turnir",
-  description: "Sistem za organizaciju kartaskih turnira u realnom vremenu",
+  title: "Turnir Bela",
+  description: "Organizuj i prati turnire u beli u realnom vremenu",
 };
 
 export default function RootLayout({

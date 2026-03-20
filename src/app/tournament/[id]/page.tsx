@@ -97,12 +97,12 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   }, [id, fetchData]);
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
       <div className="text-blue-300/50 text-lg">Ucitavanje turnira...</div>
     </div>
   );
   if (!data) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
       <div className="text-red-400 text-lg">Turnir nije pronadjen</div>
     </div>
   );
@@ -120,7 +120,7 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900">
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Link href="/" className="text-blue-300/50 hover:text-blue-300 text-sm mb-6 inline-block transition-colors">
           &larr; Nazad na listu turnira
