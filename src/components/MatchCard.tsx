@@ -39,20 +39,20 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
   };
 
   const borderClass = highlight
-    ? 'border-green-400/60 bg-green-500/10 ring-2 ring-green-400/30 scale-[1.02]'
+    ? 'border-amber-400/60 bg-amber-500/10 ring-2 ring-amber-400/30 scale-[1.02]'
     : isInProgress
       ? 'border-yellow-500/40 animate-pulse-glow'
       : color
-        ? `${color.border} ${color.bg}`
+        ? `${color.border} bg-emerald-950/30`
         : isFinished
-          ? 'border-white/10 bg-white/5'
-          : 'border-white/5 bg-white/5';
+          ? 'border-emerald-800/30 bg-emerald-950/30'
+          : 'border-emerald-800/20 bg-emerald-950/30';
 
   return (
     <div className={`backdrop-blur-sm border rounded-xl p-4 transition-all ${borderClass}`}>
       <div className="flex items-center gap-2 mb-3">
         {color && <span className={`w-2 h-2 rounded-full ${color.dot}`} />}
-        <span className={`text-xs font-medium ${color ? color.text : 'text-blue-300/40'}`}>
+        <span className={`text-xs font-medium ${color ? color.text : 'text-emerald-300/35'}`}>
           {phaseLabels[match.phase]}
           {match.group_label ? ` ${match.group_label} \u00b7 Kolo ${match.round}` : ''}
         </span>
@@ -67,7 +67,7 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
               type="number"
               min="0"
               defaultValue={match.score1 ?? ''}
-              className="w-12 text-center bg-white/10 border border-white/20 rounded-lg px-1 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-12 text-center bg-emerald-950/50 border border-emerald-700/40 rounded-lg px-1 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60"
             />
             <span className="text-white/20 font-bold">:</span>
             <input
@@ -75,7 +75,7 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
               type="number"
               min="0"
               defaultValue={match.score2 ?? ''}
-              className="w-12 text-center bg-white/10 border border-white/20 rounded-lg px-1 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-12 text-center bg-emerald-950/50 border border-emerald-700/40 rounded-lg px-1 py-1.5 text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60"
             />
             <span className="flex-1 font-medium text-white text-sm truncate">{team2Name}</span>
           </div>
@@ -83,14 +83,14 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
             <button
               type="submit"
               data-action="save"
-              className="px-3 py-1.5 text-xs bg-yellow-500/20 text-yellow-300 rounded-lg hover:bg-yellow-500/30 transition-colors border border-yellow-500/20 font-medium"
+              className="px-3 py-1.5 text-xs bg-yellow-500/15 text-yellow-300 rounded-lg hover:bg-yellow-500/25 transition-colors border border-yellow-500/20 font-medium"
             >
               Snimi
             </button>
             <button
               type="submit"
               data-action="finish"
-              className="px-3 py-1.5 text-xs bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors border border-green-500/20 font-medium"
+              className="px-3 py-1.5 text-xs bg-emerald-500/15 text-emerald-300 rounded-lg hover:bg-emerald-500/25 transition-colors border border-emerald-500/20 font-medium"
             >
               Zavrsi
             </button>
@@ -100,7 +100,7 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
         <div className="flex items-center gap-2">
           <span className={`flex-1 text-right font-medium text-sm truncate ${
             isFinished && match.score1 !== null && match.score2 !== null && match.score1 > match.score2
-              ? 'text-green-400 font-bold' : 'text-white'
+              ? 'text-amber-300 font-bold' : 'text-white'
           }`}>
             {team1Name}
           </span>
@@ -121,7 +121,7 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
           </div>
           <span className={`flex-1 font-medium text-sm truncate ${
             isFinished && match.score1 !== null && match.score2 !== null && match.score2 > match.score1
-              ? 'text-green-400 font-bold' : 'text-white'
+              ? 'text-amber-300 font-bold' : 'text-white'
           }`}>
             {team2Name}
           </span>

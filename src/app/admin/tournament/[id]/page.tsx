@@ -10,6 +10,7 @@ import Bracket from '@/components/Bracket';
 import TeamForm from '@/components/TeamForm';
 import AdminLogin from '@/components/AdminLogin';
 import ShareQR from '@/components/ShareQR';
+import CardSuits from '@/components/CardSuits';
 import { getGroupColor } from '@/lib/groupColors';
 
 interface TournamentData {
@@ -192,12 +193,12 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
   if (!authenticated) return <AdminLogin onLogin={() => { setAuthenticated(true); }} />;
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
-      <div className="text-blue-300 text-lg">Ucitavanje...</div>
+    <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
+      <div className="text-emerald-300/40 text-lg">Ucitavanje...</div>
     </div>
   );
   if (!data) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
+    <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
       <div className="text-red-400 text-lg">Turnir nije pronadjen</div>
     </div>
   );
@@ -208,35 +209,37 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
   const allGroupMatchesFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'finished');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900">
-      <main className="max-w-6xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0a0f0d] relative">
+      <CardSuits />
+      <main className="relative max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-4">
-            <Link href="/" className="text-blue-300 hover:text-blue-100 text-sm transition-colors">
+            <Link href="/" className="text-amber-400/40 hover:text-amber-400 text-sm transition-colors">
               &larr; Pocetna
             </Link>
-            <Link href={`/tournament/${id}`} className="text-blue-300 hover:text-blue-100 text-sm transition-colors">
+            <Link href={`/tournament/${id}`} className="text-amber-400/40 hover:text-amber-400 text-sm transition-colors">
               Javna stranica
             </Link>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button
               onClick={handleDeleteTournament}
-              className="text-red-400 hover:text-red-300 text-sm transition-colors"
+              className="text-red-400/60 hover:text-red-400 text-sm transition-colors"
             >
               Obrisi turnir
             </button>
             <button
               onClick={handleLogout}
-              className="text-red-400 hover:text-red-300 text-sm transition-colors"
+              className="text-emerald-300/40 hover:text-emerald-300 text-sm transition-colors"
             >
               Odjavi se
             </button>
           </div>
         </div>
 
-        <div className="bg-orange-500/20 border border-orange-500/30 backdrop-blur-sm rounded-xl px-4 py-2 mb-6">
-          <span className="text-orange-300 font-medium">Admin panel</span>
+        <div className="bg-amber-500/10 border border-amber-500/20 backdrop-blur-sm rounded-xl px-4 py-2 mb-6 inline-flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-amber-300/80 font-medium text-sm tracking-wide uppercase">Admin panel</span>
         </div>
 
         <TournamentHeader tournament={tournament} />
@@ -247,7 +250,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
 
         {/* Draft phase — add teams */}
         {tournament.status === 'draft' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in">
             <TeamForm
               tournamentId={id}
               maxTeams={tournament.team_count}
@@ -256,23 +259,23 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
             />
 
             {teams.length > 0 && (
-              <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+              <div className="bg-emerald-950/40 backdrop-blur-sm border border-emerald-800/30 rounded-2xl p-6">
                 <h3 className="font-bold mb-4 text-white">Prijavljene ekipe ({teams.length}/{tournament.team_count})</h3>
                 <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
                   {teams.map(team => (
-                    <div key={team.id} className="bg-white/10 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 border border-white/5 flex items-center justify-between gap-2">
+                    <div key={team.id} className="bg-emerald-950/50 rounded-xl px-4 py-3 text-sm font-medium text-emerald-100 border border-emerald-800/30 flex items-center justify-between gap-2 hover:border-amber-500/20 transition-colors">
                       <span className="truncate">{team.name}</span>
                       <div className="flex gap-1 shrink-0">
                         <button
                           onClick={() => handleRenameTeam(team.id, team.name)}
-                          className="text-blue-400 hover:text-blue-300 text-xs px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+                          className="text-amber-400/50 hover:text-amber-300 text-xs px-1.5 py-0.5 rounded hover:bg-amber-500/10 transition-colors"
                           title="Preimenuj"
                         >
                           &#9998;
                         </button>
                         <button
                           onClick={() => handleDeleteTeam(team.id, team.name)}
-                          className="text-red-400 hover:text-red-300 text-xs px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+                          className="text-red-400/50 hover:text-red-300 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10 transition-colors"
                           title="Obrisi"
                         >
                           &#10005;
@@ -289,7 +292,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                 <button
                   onClick={handleDraw}
                   disabled={actionLoading}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-10 py-4 rounded-xl font-bold hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 text-lg transition-all shadow-lg shadow-purple-500/25"
+                  className="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 px-10 py-4 rounded-xl font-bold hover:from-amber-500 hover:to-yellow-400 disabled:opacity-50 text-lg transition-all shadow-lg shadow-amber-500/20 hover:scale-105"
                 >
                   {actionLoading ? 'Zreb u toku...' : 'Pokreni zreb'}
                 </button>
@@ -300,7 +303,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
 
         {/* Group phase — enter results */}
         {tournament.status === 'group_phase' && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-fade-in">
             <div className="grid gap-6 md:grid-cols-2">
               {groups.map(group => (
                 <GroupTable
@@ -312,7 +315,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-xl font-bold text-white">Unos rezultata</h2>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">Unos rezultata</h2>
               {groups.map(group => {
                 const gc = getGroupColor(group);
                 return (
@@ -339,12 +342,12 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
             </div>
 
             {allGroupMatchesFinished && (
-              <div className="text-center bg-green-500/10 border border-green-500/30 backdrop-blur-sm rounded-2xl p-8">
-                <p className="text-green-300 font-medium mb-4 text-lg">Svi mecevi grupne faze su zavrseni!</p>
+              <div className="text-center bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm rounded-2xl p-8">
+                <p className="text-emerald-300 font-medium mb-4 text-lg">Svi mecevi grupne faze su zavrseni!</p>
                 <button
                   onClick={handleAdvance}
                   disabled={actionLoading}
-                  className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-10 py-4 rounded-xl font-bold hover:from-orange-500 hover:to-red-500 disabled:opacity-50 text-lg transition-all shadow-lg shadow-orange-500/25"
+                  className="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 px-10 py-4 rounded-xl font-bold hover:from-amber-500 hover:to-yellow-400 disabled:opacity-50 text-lg transition-all shadow-lg shadow-amber-500/20 hover:scale-105"
                 >
                   {actionLoading ? 'Generisanje bracketa...' : 'Kreni u eliminacije'}
                 </button>
@@ -355,7 +358,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
 
         {/* Elimination phase */}
         {(tournament.status === 'elimination' || tournament.status === 'finished') && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-fade-in">
             <div className="grid gap-6 md:grid-cols-2">
               {groups.map(group => (
                 <GroupTable
@@ -366,7 +369,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
               ))}
             </div>
 
-            <h2 className="text-xl font-bold text-white">Eliminaciona faza</h2>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">Eliminaciona faza</h2>
             <Bracket
               matches={matches}
               onUpdateScore={tournament.status === 'elimination' ? handleUpdateScore : undefined}
@@ -375,14 +378,17 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
 
             {tournament.status === 'finished' && (
               <div className="text-center">
-                <div className="inline-block bg-yellow-500/20 border-2 border-yellow-500/40 backdrop-blur-sm rounded-2xl p-8">
-                  <p className="text-2xl font-bold text-yellow-300">Turnir zavrsen!</p>
+                <div className="inline-block bg-amber-500/10 border-2 border-amber-500/20 backdrop-blur-sm rounded-2xl p-10">
+                  <div className="text-5xl mb-3">🏆</div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">Turnir zavrsen!</p>
                   {(() => {
                     const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
                     if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
                       const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
                       return winner ? (
-                        <p className="text-3xl font-bold text-yellow-200 mt-2">Pobednik: {winner.name}</p>
+                        <p className="text-3xl font-extrabold bg-gradient-to-r from-amber-300 to-yellow-200 bg-clip-text text-transparent mt-3">
+                          {winner.name}
+                        </p>
                       ) : null;
                     }
                     return null;
@@ -392,6 +398,13 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
             )}
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-20 pt-6 border-t border-amber-500/10 text-center">
+          <p className="text-white/15 text-xs tracking-widest uppercase">
+            ♠ ♥ ♦ ♣ &middot; Turnir Bela
+          </p>
+        </div>
       </main>
     </div>
   );

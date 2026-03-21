@@ -28,7 +28,7 @@ export default function Bracket({ matches, onUpdateScore, editable = false }: Br
 
   if (eliminationMatches.length === 0) {
     return (
-      <div className="text-center text-blue-300/30 py-12 text-lg">
+      <div className="text-center text-emerald-300/30 py-12 text-lg">
         Eliminaciona faza jos nije pocela
       </div>
     );
@@ -48,9 +48,9 @@ export default function Bracket({ matches, onUpdateScore, editable = false }: Br
 
           return (
             <div key={phase} className="flex flex-col gap-4 min-w-[300px]">
-              <div className="text-center pb-3 border-b border-white/10">
+              <div className="text-center pb-3 border-b border-amber-500/10">
                 <span className="text-xl mr-2">{phaseEmojis[phase]}</span>
-                <span className="text-lg font-bold text-white">{phaseLabels[phase]}</span>
+                <span className="text-lg font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">{phaseLabels[phase]}</span>
               </div>
               <div className="flex flex-col gap-4 justify-around flex-1">
                 {phaseMatches.map(match => (

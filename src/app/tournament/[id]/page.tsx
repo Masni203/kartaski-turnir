@@ -7,6 +7,7 @@ import TournamentHeader from '@/components/TournamentHeader';
 import GroupTable from '@/components/GroupTable';
 import MatchCard from '@/components/MatchCard';
 import Bracket from '@/components/Bracket';
+import CardSuits from '@/components/CardSuits';
 import { supabase } from '@/lib/supabase';
 import { getGroupColor } from '@/lib/groupColors';
 
@@ -68,7 +69,6 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   const prevMatchesRef = useRef<string>('');
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Initialize AudioContext on first user interaction (required by mobile browsers)
   useEffect(() => {
     const enableSound = () => {
       if (!audioCtxRef.current) {
@@ -87,7 +87,6 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
     };
   }, []);
 
-  // Play notification sound
   const playNotificationSound = useCallback(() => {
     if (!audioCtxRef.current || audioCtxRef.current.state === 'suspended') return;
     try {
@@ -112,11 +111,9 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
       const res = await fetch(`/api/tournaments/${id}`);
       const json = await res.json();
 
-      // Detect changed matches for animation + sound
       if (json.matches) {
         const newFingerprint = JSON.stringify(json.matches.map((m: Match) => `${m.id}:${m.score1}:${m.score2}:${m.status}`));
         if (prevMatchesRef.current && prevMatchesRef.current !== newFingerprint) {
-          // Find which matches changed
           const oldMatches = JSON.parse(prevMatchesRef.current) as string[];
           const newMatches = json.matches.map((m: Match) => `${m.id}:${m.score1}:${m.score2}:${m.status}`);
           const changed = new Set<string>();
@@ -146,9 +143,7 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
     fetchData();
   }, [fetchData]);
 
-  // Real-time subscriptions + polling fallback
   useEffect(() => {
-    // Supabase Realtime subscription
     const channel = supabase
       .channel(`tournament-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `tournament_id=eq.${id}` }, () => {
@@ -159,7 +154,6 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
       })
       .subscribe();
 
-    // Polling fallback every 5 seconds in case Realtime doesn't work
     const interval = setInterval(() => {
       fetchData();
     }, 5000);
@@ -171,12 +165,12 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   }, [id, fetchData]);
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
-      <div className="text-blue-300/50 text-lg">Ucitavanje turnira...</div>
+    <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
+      <div className="text-emerald-300/40 text-lg">Ucitavanje turnira...</div>
     </div>
   );
   if (!data) return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
+    <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
       <div className="text-red-400 text-lg">Turnir nije pronadjen</div>
     </div>
   );
@@ -194,16 +188,17 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900">
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-300/50 hover:text-blue-300 text-sm mb-6 inline-block transition-colors">
+    <div className="min-h-screen bg-[#0a0f0d] relative">
+      <CardSuits />
+      <main className="relative max-w-6xl mx-auto px-4 py-8">
+        <Link href="/" className="text-amber-400/40 hover:text-amber-400 text-sm mb-6 inline-block transition-colors">
           &larr; Nazad na listu turnira
         </Link>
 
         <TournamentHeader tournament={tournament} />
 
         {!soundEnabled && (tournament.status === 'group_phase' || tournament.status === 'elimination') && (
-          <div className="mb-4 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2 text-blue-300/60 text-sm text-center">
+          <div className="mb-4 bg-amber-500/5 border border-amber-500/15 rounded-xl px-4 py-2 text-amber-300/50 text-sm text-center">
             Dodirnite ekran da omogucite zvucne notifikacije za nove rezultate
           </div>
         )}
@@ -211,22 +206,22 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
         {tournament.status === 'draft' && (
           <div className="text-center py-16">
             <div className="text-5xl mb-4 opacity-30">🎴</div>
-            <p className="text-blue-300/30 text-lg">Turnir je u pripremi. Ekipe se dodaju u admin panelu.</p>
+            <p className="text-emerald-300/30 text-lg">Turnir je u pripremi. Ekipe se dodaju u admin panelu.</p>
           </div>
         )}
 
         {(tournament.status === 'group_phase' || tournament.status === 'elimination' || tournament.status === 'finished') && (
           <>
             {/* Tabs */}
-            <div className="flex gap-1 mb-8 bg-white/5 rounded-xl p-1 inline-flex">
+            <div className="flex gap-1 mb-8 bg-emerald-950/40 rounded-xl p-1 inline-flex border border-emerald-800/20">
               {tabs.map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`px-5 py-2.5 rounded-lg font-medium text-sm transition-all ${
                     activeTab === tab.key
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20'
-                      : 'text-blue-300/50 hover:text-blue-300 hover:bg-white/5'
+                      ? 'bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 shadow-lg shadow-amber-500/20 font-bold'
+                      : 'text-emerald-300/40 hover:text-emerald-200 hover:bg-emerald-950/60'
                   }`}
                 >
                   <span className="mr-1.5">{tab.icon}</span>
@@ -280,15 +275,15 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
 
         {tournament.status === 'finished' && (
           <div className="mt-10 text-center animate-fade-in">
-            <div className="inline-block bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-2 border-yellow-500/30 backdrop-blur-sm rounded-2xl p-10">
+            <div className="inline-block bg-amber-500/10 border-2 border-amber-500/20 backdrop-blur-sm rounded-2xl p-10">
               <div className="text-5xl mb-3">🏆</div>
-              <p className="text-2xl font-bold text-yellow-300">Turnir zavrsen!</p>
+              <p className="text-2xl font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">Turnir zavrsen!</p>
               {(() => {
                 const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
                 if (finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null) {
                   const winner = finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2;
                   return winner ? (
-                    <p className="text-3xl font-extrabold bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent mt-3">
+                    <p className="text-3xl font-extrabold bg-gradient-to-r from-amber-300 to-yellow-200 bg-clip-text text-transparent mt-3">
                       {winner.name}
                     </p>
                   ) : null;
@@ -298,6 +293,13 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-20 pt-6 border-t border-amber-500/10 text-center">
+          <p className="text-white/15 text-xs tracking-widest uppercase">
+            ♠ ♥ ♦ ♣ &middot; Turnir Bela
+          </p>
+        </div>
       </main>
     </div>
   );
