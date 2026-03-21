@@ -79,8 +79,9 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
     fetchData();
   }, [fetchData]);
 
-  // Real-time subscriptions
+  // Real-time subscriptions + polling fallback
   useEffect(() => {
+    // Supabase Realtime subscription
     const channel = supabase
       .channel(`tournament-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `tournament_id=eq.${id}` }, () => {
@@ -91,8 +92,14 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
       })
       .subscribe();
 
+    // Polling fallback every 5 seconds in case Realtime doesn't work
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [id, fetchData]);
 
