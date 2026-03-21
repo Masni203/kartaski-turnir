@@ -51,56 +51,68 @@ export default function HomePage() {
     }
   };
 
-  const statusConfig: Record<string, { label: string; gradient: string }> = {
-    draft: { label: 'Priprema', gradient: 'from-gray-500 to-gray-600' },
-    group_phase: { label: 'Grupna faza', gradient: 'from-blue-500 to-cyan-500' },
-    elimination: { label: 'Eliminacije', gradient: 'from-orange-500 to-red-500' },
-    finished: { label: 'Zavrseno', gradient: 'from-green-500 to-emerald-500' },
+  const statusConfig: Record<string, { label: string; dotColor: string; textColor: string; iconBg: string; emoji: string }> = {
+    draft: { label: 'Priprema', dotColor: 'bg-gray-400', textColor: 'text-gray-400', iconBg: 'bg-white/5 border-white/10', emoji: '📋' },
+    group_phase: { label: 'Grupna faza', dotColor: 'bg-blue-400', textColor: 'text-blue-400', iconBg: 'bg-blue-500/10 border-blue-500/20', emoji: '🃏' },
+    elimination: { label: 'Eliminacije', dotColor: 'bg-orange-400', textColor: 'text-orange-400', iconBg: 'bg-orange-500/10 border-orange-500/20', emoji: '⚔️' },
+    finished: { label: 'Zavrseno', dotColor: 'bg-emerald-400', textColor: 'text-emerald-400', iconBg: 'bg-amber-500/10 border-amber-500/20', emoji: '🏆' },
+  };
+
+  const stats = {
+    total: tournaments.length,
+    active: tournaments.filter(t => t.status === 'group_phase' || t.status === 'elimination').length,
+    finished: tournaments.filter(t => t.status === 'finished').length,
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 relative">
+    <div className="min-h-screen bg-[#0a0f0d] relative">
       <CardSuits />
 
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-600/20 via-transparent to-transparent" />
-        <div className="relative max-w-4xl mx-auto px-4 pt-16 pb-8 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 pt-12 pb-6 sm:pt-16 sm:pb-8 text-center">
           {/* Card fan decoration */}
-          <div className="flex justify-center mb-6 gap-[-8px]">
-            <div className="w-16 h-24 bg-gradient-to-br from-white/90 to-white/70 rounded-xl shadow-xl -rotate-12 flex items-center justify-center text-3xl border border-white/30 -mr-3">
+          <div className="group flex justify-center mb-8">
+            <div className="w-14 h-20 sm:w-20 sm:h-28 bg-gradient-to-br from-[#f5f0e6] to-[#e8e0d0] rounded-xl shadow-2xl shadow-black/40 -rotate-12 flex items-center justify-center text-2xl sm:text-3xl border border-amber-200/40 -mr-3 transition-transform duration-500 group-hover:-translate-y-2 group-hover:-rotate-[16deg] relative">
+              <span className="absolute top-1 left-1.5 text-[8px] sm:text-xs text-red-600 font-bold">♥</span>
               <span className="text-red-600">♥</span>
             </div>
-            <div className="w-16 h-24 bg-gradient-to-br from-white/90 to-white/70 rounded-xl shadow-xl -rotate-4 flex items-center justify-center text-3xl border border-white/30 -mr-3 relative z-10">
-              <span className="text-black">♠</span>
+            <div className="w-14 h-20 sm:w-20 sm:h-28 bg-gradient-to-br from-[#f5f0e6] to-[#e8e0d0] rounded-xl shadow-2xl shadow-black/40 -rotate-4 flex items-center justify-center text-2xl sm:text-3xl border border-amber-200/40 -mr-3 relative z-10 transition-transform duration-500 group-hover:-translate-y-3 group-hover:-rotate-[6deg]">
+              <span className="absolute top-1 left-1.5 text-[8px] sm:text-xs text-slate-800 font-bold">♠</span>
+              <span className="text-slate-800">♠</span>
             </div>
-            <div className="w-16 h-24 bg-gradient-to-br from-white/90 to-white/70 rounded-xl shadow-xl rotate-4 flex items-center justify-center text-3xl border border-white/30 -mr-3 relative z-20">
+            <div className="w-14 h-20 sm:w-20 sm:h-28 bg-gradient-to-br from-[#f5f0e6] to-[#e8e0d0] rounded-xl shadow-2xl shadow-black/40 rotate-4 flex items-center justify-center text-2xl sm:text-3xl border border-amber-200/40 -mr-3 relative z-20 transition-transform duration-500 group-hover:-translate-y-3 group-hover:rotate-[6deg]">
+              <span className="absolute top-1 left-1.5 text-[8px] sm:text-xs text-red-600 font-bold">♦</span>
               <span className="text-red-600">♦</span>
             </div>
-            <div className="w-16 h-24 bg-gradient-to-br from-white/90 to-white/70 rounded-xl shadow-xl rotate-12 flex items-center justify-center text-3xl border border-white/30 relative z-30">
-              <span className="text-black">♣</span>
+            <div className="w-14 h-20 sm:w-20 sm:h-28 bg-gradient-to-br from-[#f5f0e6] to-[#e8e0d0] rounded-xl shadow-2xl shadow-black/40 rotate-12 flex items-center justify-center text-2xl sm:text-3xl border border-amber-200/40 relative z-30 transition-transform duration-500 group-hover:-translate-y-2 group-hover:rotate-[16deg]">
+              <span className="absolute top-1 left-1.5 text-[8px] sm:text-xs text-slate-800 font-bold">♣</span>
+              <span className="text-slate-800">♣</span>
             </div>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-extrabold bg-gradient-to-r from-emerald-300 via-yellow-200 to-emerald-300 bg-clip-text text-transparent mb-3">
+          <h1 className="text-5xl sm:text-6xl font-extrabold bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 bg-clip-text text-transparent mb-3 drop-shadow-[0_0_24px_rgba(212,168,83,0.3)]">
             Turnir Bela
           </h1>
-          <p className="text-emerald-300/60 text-lg max-w-lg mx-auto">
+          <p className="text-emerald-200/50 text-lg max-w-lg mx-auto tracking-wide">
             Organizuj turnir u beli, prati rezultate uzivo i saznaj ko je najbolji za stolom
           </p>
 
-          {/* Decorative trump indicators */}
-          <div className="flex justify-center gap-6 mt-6">
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-              <span className="text-red-400">♥</span>
+          {/* Decorative chips */}
+          <div className="flex justify-center gap-4 mt-6">
+            <div className="flex items-center gap-2 bg-emerald-900/30 border border-amber-500/15 rounded-lg px-4 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400/60" />
+              <span className="text-red-400 text-sm">♥</span>
               <span className="text-xs text-white/40 font-medium">Adut</span>
             </div>
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-              <span className="text-white/60">♠</span>
+            <div className="flex items-center gap-2 bg-emerald-900/30 border border-amber-500/15 rounded-lg px-4 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400/60" />
+              <span className="text-white/60 text-sm">♠</span>
               <span className="text-xs text-white/40 font-medium">Bela</span>
             </div>
-            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-              <span className="text-yellow-400">🏆</span>
+            <div className="flex items-center gap-2 bg-emerald-900/30 border border-amber-500/15 rounded-lg px-4 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400/60" />
+              <span className="text-amber-400 text-sm">🏆</span>
               <span className="text-xs text-white/40 font-medium">Turnir</span>
             </div>
           </div>
@@ -108,75 +120,121 @@ export default function HomePage() {
       </div>
 
       <main className="relative max-w-4xl mx-auto px-4 pb-16">
-        {/* Create button */}
+        {/* CTA Button */}
         <div className="flex justify-center mb-10">
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="group relative bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:from-emerald-500 hover:to-cyan-500 transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40"
+            className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 px-8 py-4 rounded-2xl font-extrabold text-lg hover:from-amber-500 hover:to-yellow-400 transition-all duration-300 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105 border border-amber-400/50 animate-glow-border"
           >
-            <span className="flex items-center gap-2">
-              <span className="text-2xl leading-none">+</span>
+            <span className="flex items-center justify-center gap-2">
+              <span className="text-2xl leading-none">🃏</span>
               Novi turnir
             </span>
           </button>
         </div>
 
-        {/* Create form */}
-        {showCreate && (
-          <div className="animate-fade-in max-w-md mx-auto mb-10">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-2xl">
-              <h2 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
-                <span className="text-red-400">♦</span>
-                Kreiraj turnir
-              </h2>
-              <form onSubmit={handleCreate} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-emerald-200 mb-1.5">
-                    Ime turnira
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder="npr. Turnir Bela 2025"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-emerald-300/30 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-emerald-200 mb-1.5">
-                    Broj ekipa
-                  </label>
-                  <select
-                    value={teamCount}
-                    onChange={e => setTeamCount(Number(e.target.value))}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
-                  >
-                    <option value={8} className="bg-slate-800">8 ekipa (2 grupe)</option>
-                    <option value={12} className="bg-slate-800">12 ekipa (3 grupe)</option>
-                    <option value={16} className="bg-slate-800">16 ekipa (4 grupe)</option>
-                    <option value={24} className="bg-slate-800">24 ekipa (6 grupa)</option>
-                    <option value={32} className="bg-slate-800">32 ekipa (8 grupa)</option>
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  disabled={creating || !name.trim()}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold hover:from-green-500 hover:to-emerald-500 disabled:opacity-50 transition-all shadow-lg shadow-green-500/20"
+        {/* Create form — smooth expand/collapse */}
+        <div
+          className={`max-w-md mx-auto mb-10 overflow-hidden transition-all duration-500 ease-in-out ${
+            showCreate ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="bg-emerald-950/60 backdrop-blur-xl border border-amber-500/15 rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-white mb-5 flex items-center gap-2">
+              <span className="text-amber-400">♦</span>
+              Kreiraj turnir
+            </h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-emerald-200/70 mb-1.5">
+                  Ime turnira
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="npr. Turnir Bela 2026"
+                  className="w-full bg-emerald-950/50 border border-emerald-700/40 rounded-xl px-4 py-3 text-white placeholder-emerald-300/25 focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60 transition-all"
+                  tabIndex={showCreate ? 0 : -1}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-emerald-200/70 mb-1.5">
+                  Broj ekipa
+                </label>
+                <select
+                  value={teamCount}
+                  onChange={e => setTeamCount(Number(e.target.value))}
+                  className="w-full bg-emerald-950/50 border border-emerald-700/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60 transition-all"
+                  tabIndex={showCreate ? 0 : -1}
                 >
-                  {creating ? 'Kreiranje...' : 'Kreiraj turnir'}
-                </button>
-              </form>
+                  <option value={8} className="bg-slate-800">8 ekipa (2 grupe)</option>
+                  <option value={12} className="bg-slate-800">12 ekipa (3 grupe)</option>
+                  <option value={16} className="bg-slate-800">16 ekipa (4 grupe)</option>
+                  <option value={24} className="bg-slate-800">24 ekipa (6 grupa)</option>
+                  <option value={32} className="bg-slate-800">32 ekipa (8 grupa)</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={creating || !name.trim()}
+                className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 py-3 rounded-xl font-extrabold hover:from-amber-500 hover:to-yellow-400 disabled:opacity-50 transition-all shadow-lg shadow-amber-500/20"
+                tabIndex={showCreate ? 0 : -1}
+              >
+                {creating ? 'Kreiranje...' : 'Kreiraj turnir'}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Stats bar */}
+        {tournaments.length > 0 && (
+          <div className="max-w-md mx-auto mb-8 animate-fade-in">
+            <div className="bg-emerald-950/30 border border-amber-500/10 rounded-xl flex">
+              <div className="flex-1 text-center py-3">
+                <div className="text-2xl font-extrabold text-white">{stats.total}</div>
+                <div className="text-xs text-emerald-300/40 mt-0.5">Ukupno</div>
+              </div>
+              <div className="flex-1 text-center py-3 border-x border-amber-500/10">
+                <div className="text-2xl font-extrabold text-blue-400">{stats.active}</div>
+                <div className="text-xs text-emerald-300/40 mt-0.5">Aktivni</div>
+              </div>
+              <div className="flex-1 text-center py-3">
+                <div className="text-2xl font-extrabold text-emerald-400">{stats.finished}</div>
+                <div className="text-xs text-emerald-300/40 mt-0.5">Zavrseni</div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Tournament list */}
         {loading ? (
-          <div className="text-center text-emerald-300/40 py-16 text-lg">Ucitavanje...</div>
+          <div className="grid gap-4">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="bg-emerald-950/30 border border-emerald-800/20 rounded-2xl p-5 animate-pulse h-20" />
+            ))}
+          </div>
         ) : tournaments.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4 opacity-20">♠ ♥ ♦ ♣</div>
-            <p className="text-emerald-300/30 text-lg">Nema kreiranih turnira. Kreirajte prvi!</p>
+          <div className="text-center py-20">
+            <div className="group flex justify-center mb-6">
+              <div className="w-12 h-18 bg-gradient-to-br from-[#f5f0e6]/20 to-[#e8e0d0]/10 rounded-lg -rotate-12 flex items-center justify-center text-2xl border border-amber-200/10 -mr-2">
+                <span className="text-red-400/30">♥</span>
+              </div>
+              <div className="w-12 h-18 bg-gradient-to-br from-[#f5f0e6]/20 to-[#e8e0d0]/10 rounded-lg rotate-0 flex items-center justify-center text-2xl border border-amber-200/10 -mr-2 relative z-10">
+                <span className="text-white/20">♠</span>
+              </div>
+              <div className="w-12 h-18 bg-gradient-to-br from-[#f5f0e6]/20 to-[#e8e0d0]/10 rounded-lg rotate-12 flex items-center justify-center text-2xl border border-amber-200/10 relative z-20">
+                <span className="text-red-400/30">♦</span>
+              </div>
+            </div>
+            <p className="text-lg font-semibold text-white/40 mb-2">Jos nema turnira</p>
+            <p className="text-sm text-emerald-300/30 mb-6">Kreirajte prvi turnir i pozovite ekipe za sto</p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="text-amber-400 hover:text-amber-300 text-sm font-medium transition-colors"
+            >
+              Kreiraj turnir +
+            </button>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -186,29 +244,30 @@ export default function HomePage() {
                 <Link
                   key={t.id}
                   href={`/tournament/${t.id}`}
-                  className="animate-fade-in block bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-emerald-500/30 transition-all group"
-                  style={{ animationDelay: `${i * 0.05}s` }}
+                  className="animate-slide-up block bg-emerald-950/30 border border-emerald-800/40 rounded-2xl p-5 hover:bg-emerald-950/50 hover:border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-300 group"
+                  style={{ animationDelay: `${i * 0.06}s`, opacity: 0 }}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center border border-white/10 text-xl">
-                        {t.status === 'finished' ? '🏆' : t.status === 'elimination' ? '⚔️' : '🃏'}
+                      <div className={`w-12 h-12 ${status.iconBg} rounded-xl flex items-center justify-center border text-xl`}>
+                        {status.emoji}
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white group-hover:text-emerald-200 transition-colors">
+                        <h3 className="text-lg font-bold text-white group-hover:text-amber-200 transition-colors">
                           {t.name}
                         </h3>
-                        <p className="text-sm text-emerald-300/40 mt-0.5">
+                        <p className="text-sm text-emerald-300/35 mt-0.5">
                           {t.team_count} ekipa &middot; {new Date(t.created_at).toLocaleDateString('sr-Latn')}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`bg-gradient-to-r ${status.gradient} px-4 py-1.5 rounded-full text-white text-xs font-bold shadow-lg`}>
-                        {status.label}
-                      </span>
-                      <span className="text-emerald-300/30 group-hover:text-emerald-300/60 transition-colors text-sm">
-                        Pregledaj &rarr;
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${status.dotColor}`} />
+                        <span className={`text-xs font-medium ${status.textColor}`}>{status.label}</span>
+                      </div>
+                      <span className="text-amber-500/30 group-hover:text-amber-400/60 group-hover:translate-x-1 transition-all duration-300 text-sm">
+                        &#8250;
                       </span>
                     </div>
                   </div>
@@ -219,8 +278,11 @@ export default function HomePage() {
         )}
 
         {/* Footer */}
-        <div className="mt-16 text-center text-white/10 text-xs">
-          <p>♠ ♥ ♦ ♣ &middot; Turnir Bela &middot; Napravljeno za kartase</p>
+        <div className="mt-20 pt-6 border-t border-amber-500/10 text-center">
+          <p className="text-white/15 text-xs tracking-widest uppercase">
+            ♠ ♥ ♦ ♣ &middot; Turnir Bela
+          </p>
+          <p className="text-[10px] text-white/[0.08] mt-1">Napravljeno za kartase</p>
         </div>
       </main>
     </div>

@@ -1,13 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0f1e;
+  --background: #0a0f0d;
   --foreground: #e2e8f0;
+  --bg-felt: #0d1a14;
+  --gold: #d4a853;
+  --gold-dim: #a07c3a;
+  --gold-glow: rgba(212, 168, 83, 0.15);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-felt: var(--bg-felt);
+  --color-gold: var(--gold);
+  --color-gold-dim: var(--gold-dim);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,6 +23,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Felt texture overlay */
+.bg-felt-texture::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Scrollbar */
@@ -40,17 +59,24 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
+  0%, 100% { box-shadow: 0 0 8px rgba(212, 168, 83, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(212, 168, 83, 0.5); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
+@keyframes glow-border {
+  0%, 100% { box-shadow: 0 0 12px rgba(212, 168, 83, 0.15), inset 0 0 12px rgba(212, 168, 83, 0.05); }
+  50% { box-shadow: 0 0 24px rgba(212, 168, 83, 0.3), inset 0 0 24px rgba(212, 168, 83, 0.08); }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
 @keyframes float {
@@ -58,6 +84,27 @@ body {
   50% { transform: translateY(-20px) rotate(var(--rotate, 0deg)); }
 }
 
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-glow-border {
+  animation: glow-border 2.5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+  background-size: 200% 100%;
+}
+
 .animate-float {
-  animation: float 6s ease-in-out infinite;
+  animation: float 8s ease-in-out infinite;
 }

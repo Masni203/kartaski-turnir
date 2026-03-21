@@ -1,40 +1,45 @@
 'use client';
 
-// Floating card suit decorations
+const items = [
+  { suit: '♠', color: 'text-white/[0.02]', size: 'text-7xl', top: '8%', left: '5%', delay: '0s' },
+  { suit: '♥', color: 'text-red-500/[0.04]', size: 'text-8xl', top: '25%', right: '8%', delay: '1.5s' },
+  { suit: '♦', color: 'text-red-500/[0.035]', size: 'text-6xl', top: '60%', left: '12%', delay: '0.8s' },
+  { suit: '♣', color: 'text-white/[0.02]', size: 'text-9xl', top: '75%', right: '15%', delay: '2.5s' },
+  { suit: '♥', color: 'text-red-500/[0.03]', size: 'text-7xl', top: '45%', left: '80%', delay: '3s' },
+  { suit: '♠', color: 'text-white/[0.025]', size: 'text-8xl', top: '90%', left: '45%', delay: '1s' },
+];
+
 export default function CardSuits() {
-  const suits = ['♠', '♥', '♦', '♣'];
-  const colors = ['text-white/[0.03]', 'text-red-500/[0.06]', 'text-red-500/[0.05]', 'text-white/[0.03]'];
-
-  // Pre-defined positions to avoid layout shift
-  const items = [
-    { suit: 0, size: 'text-8xl', top: '5%', left: '5%', rotate: '-12deg', delay: '0s' },
-    { suit: 1, size: 'text-9xl', top: '10%', right: '8%', rotate: '15deg', delay: '1s' },
-    { suit: 2, size: 'text-7xl', top: '25%', left: '12%', rotate: '25deg', delay: '2s' },
-    { suit: 3, size: 'text-8xl', top: '35%', right: '5%', rotate: '-20deg', delay: '0.5s' },
-    { suit: 0, size: 'text-6xl', top: '50%', left: '3%', rotate: '10deg', delay: '1.5s' },
-    { suit: 1, size: 'text-7xl', top: '55%', right: '15%', rotate: '-8deg', delay: '3s' },
-    { suit: 2, size: 'text-9xl', top: '70%', left: '10%', rotate: '-15deg', delay: '2.5s' },
-    { suit: 3, size: 'text-6xl', top: '75%', right: '3%', rotate: '22deg', delay: '0.8s' },
-    { suit: 1, size: 'text-8xl', top: '85%', left: '20%', rotate: '5deg', delay: '1.8s' },
-    { suit: 0, size: 'text-7xl', top: '90%', right: '12%', rotate: '-25deg', delay: '3.5s' },
-  ];
-
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden bg-felt-texture" aria-hidden="true">
+      {/* Top emerald ambient glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.07) 0%, transparent 55%)',
+        }}
+      />
+      {/* Bottom gold ambient glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 100%, rgba(212,168,83,0.04) 0%, transparent 45%)',
+        }}
+      />
+      {/* Floating suit symbols */}
       {items.map((item, i) => (
         <span
           key={i}
-          className={`absolute ${item.size} ${colors[item.suit]} select-none animate-float`}
+          className={`absolute ${item.color} ${item.size} animate-float select-none`}
           style={{
             top: item.top,
-            left: item.left,
-            right: item.right,
-            transform: `rotate(${item.rotate})`,
+            left: 'left' in item ? item.left : undefined,
+            right: 'right' in item ? item.right : undefined,
             animationDelay: item.delay,
-            animationDuration: `${6 + (i % 4)}s`,
+            animationDuration: `${8 + (i % 3)}s`,
           }}
         >
-          {suits[item.suit]}
+          {item.suit}
         </span>
       ))}
     </div>
