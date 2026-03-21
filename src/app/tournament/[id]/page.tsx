@@ -8,6 +8,7 @@ import GroupTable from '@/components/GroupTable';
 import MatchCard from '@/components/MatchCard';
 import Bracket from '@/components/Bracket';
 import { supabase } from '@/lib/supabase';
+import { getGroupColor } from '@/lib/groupColors';
 
 interface TournamentData {
   tournament: Tournament;
@@ -248,18 +249,24 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
 
             {activeTab === 'matches' && (
               <div className="space-y-8 animate-fade-in">
-                {groups.map(group => (
-                  <div key={group}>
-                    <h3 className="text-lg font-bold mb-4 text-blue-200">Grupa {group}</h3>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {groupMatches
-                        .filter(m => m.group_label === group)
-                        .map(match => (
-                          <MatchCard key={match.id} match={match} highlight={changedMatchIds.has(match.id)} />
-                        ))}
+                {groups.map(group => {
+                  const gc = getGroupColor(group);
+                  return (
+                    <div key={group}>
+                      <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${gc.text}`}>
+                        <span className={`w-3 h-3 rounded-full ${gc.dot}`} />
+                        Grupa {group}
+                      </h3>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {groupMatches
+                          .filter(m => m.group_label === group)
+                          .map(match => (
+                            <MatchCard key={match.id} match={match} highlight={changedMatchIds.has(match.id)} />
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

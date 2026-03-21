@@ -10,6 +10,7 @@ import Bracket from '@/components/Bracket';
 import TeamForm from '@/components/TeamForm';
 import AdminLogin from '@/components/AdminLogin';
 import ShareQR from '@/components/ShareQR';
+import { getGroupColor } from '@/lib/groupColors';
 
 interface TournamentData {
   tournament: Tournament;
@@ -312,9 +313,14 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
 
             <div className="space-y-6">
               <h2 className="text-xl font-bold text-white">Unos rezultata</h2>
-              {groups.map(group => (
+              {groups.map(group => {
+                const gc = getGroupColor(group);
+                return (
                 <div key={group}>
-                  <h3 className="text-lg font-bold mb-3 text-blue-200">Grupa {group}</h3>
+                  <h3 className={`text-lg font-bold mb-3 flex items-center gap-2 ${gc.text}`}>
+                    <span className={`w-3 h-3 rounded-full ${gc.dot}`} />
+                    Grupa {group}
+                  </h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {groupMatches
                       .filter(m => m.group_label === group)
@@ -328,7 +334,8 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                       ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {allGroupMatchesFinished && (

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Match } from '@/lib/types';
+import { getGroupColor, type GroupColor } from '@/lib/groupColors';
 
 interface MatchCardProps {
   match: Match;
@@ -23,6 +24,8 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
   const isFinished = match.status === 'finished';
   const isInProgress = match.status === 'in_progress';
 
+  const color: GroupColor | null = match.group_label ? getGroupColor(match.group_label) : null;
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -35,15 +38,24 @@ export default function MatchCard({ match, onUpdateScore, editable = false, high
     }
   };
 
+  const borderClass = highlight
+    ? 'border-green-400/60 bg-green-500/10 ring-2 ring-green-400/30 scale-[1.02]'
+    : isInProgress
+      ? 'border-yellow-500/40 animate-pulse-glow'
+      : color
+        ? `${color.border} ${color.bg}`
+        : isFinished
+          ? 'border-white/10 bg-white/5'
+          : 'border-white/5 bg-white/5';
+
   return (
-    <div className={`bg-white/5 backdrop-blur-sm border rounded-xl p-4 transition-all ${
-      highlight ? 'border-green-400/60 bg-green-500/10 ring-2 ring-green-400/30 scale-[1.02]' :
-      isInProgress ? 'border-yellow-500/40 animate-pulse-glow' :
-      isFinished ? 'border-white/10' : 'border-white/5'
-    }`}>
-      <div className="text-xs text-blue-300/40 mb-3 font-medium">
-        {phaseLabels[match.phase]}
-        {match.group_label ? ` ${match.group_label} \u00b7 Kolo ${match.round}` : ''}
+    <div className={`backdrop-blur-sm border rounded-xl p-4 transition-all ${borderClass}`}>
+      <div className="flex items-center gap-2 mb-3">
+        {color && <span className={`w-2 h-2 rounded-full ${color.dot}`} />}
+        <span className={`text-xs font-medium ${color ? color.text : 'text-blue-300/40'}`}>
+          {phaseLabels[match.phase]}
+          {match.group_label ? ` ${match.group_label} \u00b7 Kolo ${match.round}` : ''}
+        </span>
       </div>
 
       {editable && !isFinished ? (

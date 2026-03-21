@@ -1,6 +1,7 @@
 'use client';
 
 import type { Standing } from '@/lib/types';
+import { getGroupColor } from '@/lib/groupColors';
 
 interface GroupTableProps {
   groupLabel: string;
@@ -8,9 +9,12 @@ interface GroupTableProps {
 }
 
 export default function GroupTable({ groupLabel, standings }: GroupTableProps) {
+  const color = getGroupColor(groupLabel);
+
   return (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600/80 to-cyan-600/80 px-5 py-3">
+    <div className={`${color.bg} backdrop-blur-sm border ${color.border} rounded-2xl overflow-hidden`}>
+      <div className={`bg-gradient-to-r ${color.gradient} px-5 py-3 flex items-center gap-2`}>
+        <span className={`w-2.5 h-2.5 rounded-full ${color.dot}`} />
         <h3 className="text-lg font-bold text-white">Grupa {groupLabel}</h3>
       </div>
       <div className="overflow-x-auto">
