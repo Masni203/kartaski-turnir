@@ -63,12 +63,34 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'bracket'>('groups');
   const [changedMatchIds, setChangedMatchIds] = useState<Set<string>>(new Set());
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const prevMatchesRef = useRef<string>('');
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Initialize AudioContext on first user interaction (required by mobile browsers)
+  useEffect(() => {
+    const enableSound = () => {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+      setSoundEnabled(true);
+    };
+    document.addEventListener('click', enableSound, { once: true });
+    document.addEventListener('touchstart', enableSound, { once: true });
+    return () => {
+      document.removeEventListener('click', enableSound);
+      document.removeEventListener('touchstart', enableSound);
+    };
+  }, []);
 
   // Play notification sound
   const playNotificationSound = useCallback(() => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === 'suspended') return;
     try {
-      const ctx = new AudioContext();
+      const ctx = audioCtxRef.current;
       const oscillator = ctx.createOscillator();
       const gain = ctx.createGain();
       oscillator.connect(gain);
@@ -178,6 +200,12 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
         </Link>
 
         <TournamentHeader tournament={tournament} />
+
+        {!soundEnabled && (tournament.status === 'group_phase' || tournament.status === 'elimination') && (
+          <div className="mb-4 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2 text-blue-300/60 text-sm text-center">
+            Dodirnite ekran da omogucite zvucne notifikacije za nove rezultate
+          </div>
+        )}
 
         {tournament.status === 'draft' && (
           <div className="text-center py-16">
