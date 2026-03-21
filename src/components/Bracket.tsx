@@ -5,7 +5,7 @@ import MatchCard from './MatchCard';
 
 interface BracketProps {
   matches: Match[];
-  onUpdateScore?: (matchId: string, score1: number, score2: number, status: 'in_progress' | 'finished') => void;
+  onUpdateScore?: (matchId: string, score1: number, score2: number, status: 'in_progress' | 'finished' | 'pending') => void;
   editable?: boolean;
 }
 

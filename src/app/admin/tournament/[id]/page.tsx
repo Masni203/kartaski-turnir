@@ -113,7 +113,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
     }
   };
 
-  const handleUpdateScore = async (matchId: string, score1: number, score2: number, status: 'in_progress' | 'finished') => {
+  const handleUpdateScore = async (matchId: string, score1: number, score2: number, status: 'in_progress' | 'finished' | 'pending') => {
     try {
       const res = await fetch(`/api/matches/${matchId}`, {
         method: 'PUT',
@@ -128,6 +128,57 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
       fetchData();
     } catch {
       alert('Greska pri azuriranju rezultata');
+    }
+  };
+
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Obrisati ekipu "${teamName}"?`)) return;
+    try {
+      const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Greska pri brisanju');
+        return;
+      }
+      fetchData();
+    } catch {
+      alert('Greska pri brisanju ekipe');
+    }
+  };
+
+  const handleRenameTeam = async (teamId: string, currentName: string) => {
+    const newName = prompt('Novo ime ekipe:', currentName);
+    if (!newName || newName.trim() === currentName) return;
+    try {
+      const res = await fetch(`/api/teams/${teamId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Greska pri izmeni');
+        return;
+      }
+      fetchData();
+    } catch {
+      alert('Greska pri izmeni imena');
+    }
+  };
+
+  const handleDeleteTournament = async () => {
+    if (!confirm('Da li ste sigurni da zelite obrisati ceo turnir? Ova akcija je nepovratna!')) return;
+    if (!confirm('POSLEDNJE UPOZORENJE: Svi podaci ce biti izgubljeni. Nastaviti?')) return;
+    try {
+      const res = await fetch(`/api/tournaments/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Greska pri brisanju');
+        return;
+      }
+      window.location.href = '/';
+    } catch {
+      alert('Greska pri brisanju turnira');
     }
   };
 
@@ -167,12 +218,20 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
               Javna stranica
             </Link>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-red-400 hover:text-red-300 text-sm transition-colors"
-          >
-            Odjavi se
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleDeleteTournament}
+              className="text-red-400 hover:text-red-300 text-sm transition-colors"
+            >
+              Obrisi turnir
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-red-400 hover:text-red-300 text-sm transition-colors"
+            >
+              Odjavi se
+            </button>
+          </div>
         </div>
 
         <div className="bg-orange-500/20 border border-orange-500/30 backdrop-blur-sm rounded-xl px-4 py-2 mb-6">
@@ -200,8 +259,24 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                 <h3 className="font-bold mb-4 text-white">Prijavljene ekipe ({teams.length}/{tournament.team_count})</h3>
                 <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
                   {teams.map(team => (
-                    <div key={team.id} className="bg-white/10 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 border border-white/5">
-                      {team.name}
+                    <div key={team.id} className="bg-white/10 rounded-xl px-4 py-3 text-sm font-medium text-blue-100 border border-white/5 flex items-center justify-between gap-2">
+                      <span className="truncate">{team.name}</span>
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={() => handleRenameTeam(team.id, team.name)}
+                          className="text-blue-400 hover:text-blue-300 text-xs px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+                          title="Preimenuj"
+                        >
+                          &#9998;
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTeam(team.id, team.name)}
+                          className="text-red-400 hover:text-red-300 text-xs px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+                          title="Obrisi"
+                        >
+                          &#10005;
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -4,8 +4,9 @@ import type { Match } from '@/lib/types';
 
 interface MatchCardProps {
   match: Match;
-  onUpdateScore?: (matchId: string, score1: number, score2: number, status: 'in_progress' | 'finished') => void;
+  onUpdateScore?: (matchId: string, score1: number, score2: number, status: 'in_progress' | 'finished' | 'pending') => void;
   editable?: boolean;
+  highlight?: boolean;
 }
 
 const phaseLabels: Record<string, string> = {
@@ -16,7 +17,7 @@ const phaseLabels: Record<string, string> = {
   final: 'Finale',
 };
 
-export default function MatchCard({ match, onUpdateScore, editable = false }: MatchCardProps) {
+export default function MatchCard({ match, onUpdateScore, editable = false, highlight = false }: MatchCardProps) {
   const team1Name = match.team1?.name || 'TBD';
   const team2Name = match.team2?.name || 'TBD';
   const isFinished = match.status === 'finished';
@@ -36,6 +37,7 @@ export default function MatchCard({ match, onUpdateScore, editable = false }: Ma
 
   return (
     <div className={`bg-white/5 backdrop-blur-sm border rounded-xl p-4 transition-all ${
+      highlight ? 'border-green-400/60 bg-green-500/10 ring-2 ring-green-400/30 scale-[1.02]' :
       isInProgress ? 'border-yellow-500/40 animate-pulse-glow' :
       isFinished ? 'border-white/10' : 'border-white/5'
     }`}>
@@ -123,8 +125,16 @@ export default function MatchCard({ match, onUpdateScore, editable = false }: Ma
         </div>
       )}
       {isFinished && (
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex justify-center gap-3">
           <span className="text-xs text-white/20">Zavrseno</span>
+          {editable && onUpdateScore && (
+            <button
+              onClick={() => onUpdateScore(match.id, 0, 0, 'pending')}
+              className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              Resetuj
+            </button>
+          )}
         </div>
       )}
     </div>

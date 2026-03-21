@@ -374,6 +374,19 @@ export async function advanceWinner(matchId: string) {
   return { winnerId, isFinal: false };
 }
 
+// Reset match to pending
+export async function resetMatch(matchId: string) {
+  const { data, error } = await supabase
+    .from('matches')
+    .update({ score1: null, score2: null, status: 'pending' })
+    .eq('id', matchId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 // Update match score
 export async function updateMatchScore(
   matchId: string,

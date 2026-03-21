@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, use } from 'react';
+import { useEffect, useState, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import type { Tournament, Team, Match, Standing } from '@/lib/types';
 import TournamentHeader from '@/components/TournamentHeader';
@@ -62,18 +62,62 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   const [data, setData] = useState<TournamentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'bracket'>('groups');
+  const [changedMatchIds, setChangedMatchIds] = useState<Set<string>>(new Set());
+  const prevMatchesRef = useRef<string>('');
+
+  // Play notification sound
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.frequency.value = 880;
+      oscillator.type = 'sine';
+      gain.gain.value = 0.3;
+      oscillator.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      oscillator.stop(ctx.currentTime + 0.3);
+    } catch {
+      // Audio not supported
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`/api/tournaments/${id}`);
       const json = await res.json();
+
+      // Detect changed matches for animation + sound
+      if (json.matches) {
+        const newFingerprint = JSON.stringify(json.matches.map((m: Match) => `${m.id}:${m.score1}:${m.score2}:${m.status}`));
+        if (prevMatchesRef.current && prevMatchesRef.current !== newFingerprint) {
+          // Find which matches changed
+          const oldMatches = JSON.parse(prevMatchesRef.current) as string[];
+          const newMatches = json.matches.map((m: Match) => `${m.id}:${m.score1}:${m.score2}:${m.status}`);
+          const changed = new Set<string>();
+          newMatches.forEach((entry: string, i: number) => {
+            if (oldMatches[i] !== entry) {
+              changed.add(entry.split(':')[0]);
+            }
+          });
+          if (changed.size > 0) {
+            setChangedMatchIds(changed);
+            playNotificationSound();
+            setTimeout(() => setChangedMatchIds(new Set()), 2000);
+          }
+        }
+        prevMatchesRef.current = JSON.stringify(json.matches.map((m: Match) => `${m.id}:${m.score1}:${m.score2}:${m.status}`));
+      }
+
       setData(json);
     } catch {
       console.error('Greska pri ucitavanju');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, playNotificationSound]);
 
   useEffect(() => {
     fetchData();
@@ -183,7 +227,7 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
                       {groupMatches
                         .filter(m => m.group_label === group)
                         .map(match => (
-                          <MatchCard key={match.id} match={match} />
+                          <MatchCard key={match.id} match={match} highlight={changedMatchIds.has(match.id)} />
                         ))}
                     </div>
                   </div>
