@@ -5,7 +5,7 @@ export type MatchStatus = 'pending' | 'in_progress' | 'finished';
 export interface Tournament {
   id: string;
   name: string;
-  team_count: number;
+  team_count: number | null;
   status: TournamentStatus;
   created_at: string;
 }

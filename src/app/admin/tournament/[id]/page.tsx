@@ -271,14 +271,13 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
           <div className="space-y-6 animate-fade-in">
             <TeamForm
               tournamentId={id}
-              maxTeams={tournament.team_count}
               currentCount={teams.length}
               onTeamAdded={fetchData}
             />
 
             {teams.length > 0 && (
               <div className="bg-emerald-950/40 backdrop-blur-sm border border-emerald-800/30 rounded-2xl p-6">
-                <h3 className="font-bold mb-4 text-white">Prijavljene ekipe ({teams.length}/{tournament.team_count})</h3>
+                <h3 className="font-bold mb-4 text-white">Prijavljene ekipe ({teams.length})</h3>
                 <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
                   {teams.map(team => (
                     <div key={team.id} className="bg-emerald-950/50 rounded-xl px-4 py-3 text-sm font-medium text-emerald-100 border border-emerald-800/30 flex items-center justify-between gap-2 hover:border-amber-500/20 transition-colors">
@@ -305,14 +304,14 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
               </div>
             )}
 
-            {teams.length === tournament.team_count && (
+            {teams.length >= 8 && teams.length <= 40 && (
               <div className="text-center">
                 <button
                   onClick={handleDraw}
                   disabled={actionLoading}
                   className="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 px-10 py-4 rounded-xl font-bold hover:from-amber-500 hover:to-yellow-400 disabled:opacity-50 text-lg transition-all shadow-lg shadow-amber-500/20 hover:scale-105"
                 >
-                  {actionLoading ? 'Zreb u toku...' : 'Pokreni zreb'}
+                  {actionLoading ? 'Zreb u toku...' : `Pokreni zreb (${teams.length} ekipa)`}
                 </button>
               </div>
             )}
@@ -328,7 +327,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                   key={group}
                   groupLabel={group}
                   standings={calculateStandingsLocal(teams, matches, group)}
-                  qualifyCount={getQualifyCount(tournament.team_count)}
+                  qualifyCount={getQualifyCount(tournament.team_count || teams.length)}
                 />
               ))}
             </div>
@@ -384,7 +383,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                   key={group}
                   groupLabel={group}
                   standings={calculateStandingsLocal(teams, matches, group)}
-                  qualifyCount={getQualifyCount(tournament.team_count)}
+                  qualifyCount={getQualifyCount(tournament.team_count || teams.length)}
                 />
               ))}
             </div>

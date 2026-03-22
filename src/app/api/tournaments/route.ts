@@ -16,18 +16,14 @@ export async function GET() {
 // POST /api/tournaments — create new tournament
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { name, teamCount } = body;
+  const { name } = body;
 
-  if (!name || !teamCount) {
-    return NextResponse.json({ error: 'Ime i broj ekipa su obavezni' }, { status: 400 });
-  }
-
-  if (teamCount < 8 || teamCount > 40) {
-    return NextResponse.json({ error: 'Broj ekipa mora biti izmedju 8 i 40' }, { status: 400 });
+  if (!name) {
+    return NextResponse.json({ error: 'Ime turnira je obavezno' }, { status: 400 });
   }
 
   try {
-    const tournament = await createTournament(name, teamCount);
+    const tournament = await createTournament(name);
     return NextResponse.json(tournament, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Greska pri kreiranju turnira';

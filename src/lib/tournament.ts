@@ -16,11 +16,11 @@ function getGroupLabels(): string[] {
   return ['A', 'B', 'C', 'D'];
 }
 
-// Create a new tournament
-export async function createTournament(name: string, teamCount: number) {
+// Create a new tournament (just a name, teams added later)
+export async function createTournament(name: string) {
   const { data, error } = await supabase
     .from('tournaments')
-    .insert({ name, team_count: teamCount, status: 'draft' })
+    .insert({ name, team_count: null, status: 'draft' })
     .select()
     .single();
 
@@ -58,9 +58,18 @@ export async function drawGroups(tournamentId: string) {
     .eq('tournament_id', tournamentId);
 
   if (teamsErr) throw teamsErr;
-  if (!teams || teams.length !== tournament.team_count) {
-    throw new Error(`Trebate tacno ${tournament.team_count} ekipa za zreb. Trenutno: ${teams?.length || 0}`);
+  if (!teams || teams.length < 8) {
+    throw new Error(`Minimum 8 ekipa za zreb. Trenutno: ${teams?.length || 0}`);
   }
+  if (teams.length > 40) {
+    throw new Error(`Maksimum 40 ekipa. Trenutno: ${teams.length}`);
+  }
+
+  // Set team_count now that we know the final number
+  await supabase
+    .from('tournaments')
+    .update({ team_count: teams.length })
+    .eq('id', tournamentId);
 
   const shuffled = shuffle(teams);
   const groups = getGroupLabels();

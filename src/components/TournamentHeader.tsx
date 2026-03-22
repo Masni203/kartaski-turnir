@@ -23,7 +23,7 @@ export default function TournamentHeader({ tournament }: TournamentHeaderProps) 
           <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-300 bg-clip-text text-transparent">
             {tournament.name}
           </h1>
-          <p className="text-emerald-300/40 mt-1">{tournament.team_count} ekipa</p>
+          <p className="text-emerald-300/40 mt-1">{tournament.team_count ? `${tournament.team_count} ekipa` : 'Prijava ekipa u toku'}</p>
         </div>
         <span className={`inline-flex items-center gap-2 ${status.bgColor} border px-4 py-2 rounded-xl font-medium ${status.textColor}`}>
           <span className={`w-2 h-2 rounded-full ${status.dotColor}`} />

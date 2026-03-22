@@ -254,7 +254,7 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
                     key={group}
                     groupLabel={group}
                     standings={calculateStandingsLocal(teams, matches, group)}
-                    qualifyCount={getQualifyCount(tournament.team_count)}
+                    qualifyCount={getQualifyCount(tournament.team_count || teams.length)}
                   />
                 ))}
               </div>

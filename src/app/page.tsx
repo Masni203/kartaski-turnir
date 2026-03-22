@@ -10,7 +10,6 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
-  const [teamCount, setTeamCount] = useState(8);
   const [creating, setCreating] = useState(false);
 
   const fetchTournaments = async () => {
@@ -38,7 +37,7 @@ export default function HomePage() {
       const res = await fetch('/api/tournaments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), teamCount }),
+        body: JSON.stringify({ name: name.trim() }),
       });
 
       if (res.ok) {
@@ -158,23 +157,6 @@ export default function HomePage() {
                   tabIndex={showCreate ? 0 : -1}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-emerald-200/70 mb-1.5">
-                  Broj ekipa
-                </label>
-                <input
-                  type="number"
-                  min={8}
-                  max={40}
-                  value={teamCount}
-                  onChange={e => setTeamCount(Number(e.target.value))}
-                  className="w-full bg-emerald-950/50 border border-emerald-700/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60 transition-all"
-                  tabIndex={showCreate ? 0 : -1}
-                />
-                <p className="text-xs text-emerald-300/40 mt-1.5">
-                  4 grupe, {Math.floor(teamCount / 4)}-{Math.ceil(teamCount / 4)} ekipa po grupi
-                </p>
-              </div>
               <button
                 type="submit"
                 disabled={creating || !name.trim()}
@@ -257,7 +239,7 @@ export default function HomePage() {
                           {t.name}
                         </h3>
                         <p className="text-sm text-emerald-300/35 mt-0.5">
-                          {t.team_count} ekipa &middot; {new Date(t.created_at).toLocaleDateString('sr-Latn')}
+                          {t.team_count ? `${t.team_count} ekipa` : 'Priprema'} &middot; {new Date(t.created_at).toLocaleDateString('sr-Latn')}
                         </p>
                       </div>
                     </div>
