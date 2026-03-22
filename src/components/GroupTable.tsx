@@ -6,9 +6,10 @@ import { getGroupColor } from '@/lib/groupColors';
 interface GroupTableProps {
   groupLabel: string;
   standings: Standing[];
+  qualifyCount?: number;
 }
 
-export default function GroupTable({ groupLabel, standings }: GroupTableProps) {
+export default function GroupTable({ groupLabel, standings, qualifyCount = 2 }: GroupTableProps) {
   const color = getGroupColor(groupLabel);
 
   return (
@@ -25,7 +26,6 @@ export default function GroupTable({ groupLabel, standings }: GroupTableProps) {
               <th className="px-3 py-3 text-left text-emerald-300/50 font-medium">Ekipa</th>
               <th className="px-3 py-3 text-center text-emerald-300/50 font-medium">OM</th>
               <th className="px-3 py-3 text-center text-emerald-300/50 font-medium">P</th>
-              <th className="px-3 py-3 text-center text-emerald-300/50 font-medium">N</th>
               <th className="px-3 py-3 text-center text-emerald-300/50 font-medium">I</th>
               <th className="px-3 py-3 text-center text-emerald-300/50 font-medium">D:P</th>
               <th className="px-3 py-3 text-center text-emerald-300/50 font-medium">+/-</th>
@@ -37,14 +37,14 @@ export default function GroupTable({ groupLabel, standings }: GroupTableProps) {
               <tr
                 key={s.team.id}
                 className={`border-t border-white/5 transition-colors hover:bg-white/5 ${
-                  i < 2 ? 'bg-emerald-500/5' : ''
+                  i < qualifyCount ? 'bg-emerald-500/5' : ''
                 }`}
               >
                 <td className="px-3 py-2.5">
                   <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                    i === 0 ? 'bg-amber-500/20 text-amber-300' :
-                    i === 1 ? 'bg-emerald-500/20 text-emerald-300' :
-                    'bg-white/5 text-white/40'
+                    i < qualifyCount
+                      ? (i === 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300')
+                      : 'bg-white/5 text-white/40'
                   }`}>
                     {i + 1}
                   </span>
@@ -52,7 +52,6 @@ export default function GroupTable({ groupLabel, standings }: GroupTableProps) {
                 <td className="px-3 py-2.5 font-medium text-white">{s.team.name}</td>
                 <td className="px-3 py-2.5 text-center text-white/60">{s.played}</td>
                 <td className="px-3 py-2.5 text-center text-green-400">{s.wins}</td>
-                <td className="px-3 py-2.5 text-center text-yellow-400">{s.draws}</td>
                 <td className="px-3 py-2.5 text-center text-red-400">{s.losses}</td>
                 <td className="px-3 py-2.5 text-center text-white/60">{s.scored}:{s.conceded}</td>
                 <td className="px-3 py-2.5 text-center">

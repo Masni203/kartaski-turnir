@@ -38,7 +38,6 @@ export interface Standing {
   team: Team;
   played: number;
   wins: number;
-  draws: number;
   losses: number;
   scored: number;
   conceded: number;

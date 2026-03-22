@@ -7,7 +7,7 @@ create extension if not exists "uuid-ossp";
 create table tournaments (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
-  team_count integer not null check (team_count in (8, 12, 16, 24, 32)),
+  team_count integer not null check (team_count >= 8 and team_count <= 40),
   status text not null default 'draft' check (status in ('draft', 'group_phase', 'elimination', 'finished')),
   created_at timestamptz not null default now()
 );

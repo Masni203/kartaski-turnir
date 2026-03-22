@@ -162,18 +162,18 @@ export default function HomePage() {
                 <label className="block text-sm font-medium text-emerald-200/70 mb-1.5">
                   Broj ekipa
                 </label>
-                <select
+                <input
+                  type="number"
+                  min={8}
+                  max={40}
                   value={teamCount}
                   onChange={e => setTeamCount(Number(e.target.value))}
                   className="w-full bg-emerald-950/50 border border-emerald-700/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/60 transition-all"
                   tabIndex={showCreate ? 0 : -1}
-                >
-                  <option value={8} className="bg-slate-800">8 ekipa (2 grupe)</option>
-                  <option value={12} className="bg-slate-800">12 ekipa (3 grupe)</option>
-                  <option value={16} className="bg-slate-800">16 ekipa (4 grupe)</option>
-                  <option value={24} className="bg-slate-800">24 ekipa (6 grupa)</option>
-                  <option value={32} className="bg-slate-800">32 ekipa (8 grupa)</option>
-                </select>
+                />
+                <p className="text-xs text-emerald-300/40 mt-1.5">
+                  4 grupe, {Math.floor(teamCount / 4)}-{Math.ceil(teamCount / 4)} ekipa po grupi
+                </p>
               </div>
               <button
                 type="submit"

@@ -26,6 +26,10 @@ export async function PUT(
     return NextResponse.json({ error: 'Rezultat je obavezan' }, { status: 400 });
   }
 
+  if (matchStatus === 'finished' && score1 === score2) {
+    return NextResponse.json({ error: 'Mec ne moze zavrsiti nerijeseno' }, { status: 400 });
+  }
+
   try {
     const match = await updateMatchScore(id, score1, score2, matchStatus || 'finished') as Match;
 

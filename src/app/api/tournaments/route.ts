@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ime i broj ekipa su obavezni' }, { status: 400 });
   }
 
-  if (![8, 12, 16, 24, 32].includes(teamCount)) {
-    return NextResponse.json({ error: 'Broj ekipa mora biti 8, 12, 16, 24 ili 32' }, { status: 400 });
+  if (teamCount < 8 || teamCount > 40) {
+    return NextResponse.json({ error: 'Broj ekipa mora biti izmedju 8 i 40' }, { status: 400 });
   }
 
   try {

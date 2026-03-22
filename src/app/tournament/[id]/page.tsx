@@ -27,7 +27,7 @@ function calculateStandingsLocal(teams: Team[], matches: Match[], groupLabel: st
   for (const team of groupTeams) {
     standingsMap.set(team.id, {
       team,
-      played: 0, wins: 0, draws: 0, losses: 0,
+      played: 0, wins: 0, losses: 0,
       scored: 0, conceded: 0, diff: 0, points: 0,
     });
   }
@@ -45,18 +45,35 @@ function calculateStandingsLocal(teams: Team[], matches: Match[], groupLabel: st
     s2.scored += match.score2; s2.conceded += match.score1;
 
     if (match.score1 > match.score2) {
-      s1.wins++; s1.points += 3; s2.losses++;
+      s1.wins++; s1.points += 2; s2.losses++;
     } else if (match.score1 < match.score2) {
-      s2.wins++; s2.points += 3; s1.losses++;
-    } else {
-      s1.draws++; s2.draws++; s1.points += 1; s2.points += 1;
+      s2.wins++; s2.points += 2; s1.losses++;
     }
+  }
+
+  function getHeadToHeadResult(teamAId: string, teamBId: string): number {
+    for (const m of groupMatches) {
+      if (m.score1 === null || m.score2 === null) continue;
+      if (m.team1_id === teamAId && m.team2_id === teamBId) {
+        return m.score1 > m.score2 ? 1 : m.score1 < m.score2 ? -1 : 0;
+      }
+      if (m.team1_id === teamBId && m.team2_id === teamAId) {
+        return m.score2 > m.score1 ? 1 : m.score2 < m.score1 ? -1 : 0;
+      }
+    }
+    return 0;
   }
 
   const standings = Array.from(standingsMap.values());
   for (const s of standings) s.diff = s.scored - s.conceded;
-  standings.sort((a, b) => b.points - a.points || b.diff - a.diff || b.scored - a.scored);
+  standings.sort((a, b) => b.points - a.points || b.diff - a.diff || getHeadToHeadResult(b.team.id, a.team.id));
   return standings;
+}
+
+function getQualifyCount(teamCount: number): number {
+  if (teamCount >= 24) return 4;
+  if (teamCount >= 12) return 2;
+  return 1;
 }
 
 export default function TournamentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -237,6 +254,7 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
                     key={group}
                     groupLabel={group}
                     standings={calculateStandingsLocal(teams, matches, group)}
+                    qualifyCount={getQualifyCount(tournament.team_count)}
                   />
                 ))}
               </div>
