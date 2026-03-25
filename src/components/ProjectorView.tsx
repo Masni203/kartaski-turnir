@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Tournament, Team, Match, Standing } from '@/lib/types';
 import { getGroupColor } from '@/lib/groupColors';
 
@@ -21,46 +21,81 @@ const phaseLabels: Record<string, string> = {
 
 const phaseOrder = ['round_of_16', 'quarterfinal', 'semifinal', 'final'] as const;
 
-// Split groups into pairs for match rotation: [['A','B'], ['C','D']]
-function groupPairs(groups: string[]): string[][] {
-  const pairs: string[][] = [];
-  for (let i = 0; i < groups.length; i += 2) {
-    pairs.push(groups.slice(i, i + 2));
-  }
-  return pairs;
-}
+// How many match rows fit on half-screen (one group column)
+// 1080p: ~900px available, ~50px group header = 850px / ~52px per row ≈ 16
+// Be conservative for varying screens
+const MATCHES_PER_PAGE = 14;
+
+type Slide =
+  | { type: 'groups' }
+  | { type: 'matches'; groups: string[]; page: number; totalPages: number }
+  | { type: 'bracket' };
 
 export default function ProjectorView({ tournament, teams, matches, calculateStandings, qualifyCount }: ProjectorViewProps) {
-  const groups = [...new Set(teams.map(t => t.group_label).filter(Boolean))].sort() as string[];
+  const groups = useMemo(
+    () => [...new Set(teams.map(t => t.group_label).filter(Boolean))].sort() as string[],
+    [teams]
+  );
   const isElimination = tournament.status === 'elimination' || tournament.status === 'finished';
+  const groupMatches = useMemo(() => matches.filter(m => m.phase === 'group'), [matches]);
+  const eliminationMatches = useMemo(() => matches.filter(m => m.phase !== 'group'), [matches]);
+  const phases = useMemo(() => phaseOrder.filter(p => eliminationMatches.some(m => m.phase === p)), [eliminationMatches]);
 
-  // Build slides: groups (1 slide), match pairs (N slides), bracket (1 slide if elimination)
-  type Slide = { type: 'groups' } | { type: 'matches'; groups: string[] } | { type: 'bracket' };
-  const slides: Slide[] = [];
-  slides.push({ type: 'groups' });
-  const matchPairs = groupPairs(groups);
-  for (const pair of matchPairs) {
-    slides.push({ type: 'matches', groups: pair });
-  }
-  if (isElimination) {
-    slides.push({ type: 'bracket' });
-  }
+  // Max teams per group — drives adaptive sizing
+  const maxTeamsPerGroup = useMemo(
+    () => Math.max(...groups.map(g => teams.filter(t => t.group_label === g).length), 0),
+    [groups, teams]
+  );
+
+  // Sort matches: in_progress first, then pending, then finished
+  const sortedMatchesForGroup = useCallback((group: string) => {
+    const gm = groupMatches.filter(m => m.group_label === group);
+    const inProgress = gm.filter(m => m.status === 'in_progress');
+    const pending = gm.filter(m => m.status === 'pending');
+    const finished = gm.filter(m => m.status === 'finished');
+    return [...inProgress, ...pending, ...finished];
+  }, [groupMatches]);
+
+  // Build slides
+  const slides: Slide[] = useMemo(() => {
+    const s: Slide[] = [];
+    // Groups slide
+    s.push({ type: 'groups' });
+
+    // Match slides — pair groups and paginate
+    for (let i = 0; i < groups.length; i += 2) {
+      const pair = groups.slice(i, i + 2);
+      // Find max matches in this pair to determine pages
+      const maxMatches = Math.max(...pair.map(g => groupMatches.filter(m => m.group_label === g).length));
+      const totalPages = Math.max(1, Math.ceil(maxMatches / MATCHES_PER_PAGE));
+      for (let page = 0; page < totalPages; page++) {
+        s.push({ type: 'matches', groups: pair, page, totalPages });
+      }
+    }
+
+    // Bracket slide
+    if (isElimination) {
+      s.push({ type: 'bracket' });
+    }
+    return s;
+  }, [groups, groupMatches, isElimination]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Slide durations: groups 15s, matches 20s, bracket 15s
-  const getSlideDuration = (slide: Slide) => {
-    if (slide.type === 'matches') return 20000;
-    return 15000;
-  };
-
   const [progress, setProgress] = useState(0);
 
+  // Slide durations
+  const getSlideDuration = useCallback((slide: Slide) => {
+    if (slide.type === 'matches') return 15000;
+    return 12000;
+  }, []);
+
+  // Auto-rotate
   useEffect(() => {
-    if (!autoRotate) { setProgress(0); return; }
-    const duration = getSlideDuration(slides[currentSlide]);
+    if (!autoRotate || slides.length === 0) { setProgress(0); return; }
+    const safeIdx = currentSlide % slides.length;
+    const duration = getSlideDuration(slides[safeIdx]);
     setProgress(0);
     const start = Date.now();
     let raf: number;
@@ -70,13 +105,11 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
       if (elapsed < duration) raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-
     const timeout = setTimeout(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length);
     }, duration);
-
     return () => { clearTimeout(timeout); cancelAnimationFrame(raf); };
-  }, [currentSlide, autoRotate, slides.length]);
+  }, [currentSlide, autoRotate, slides.length, getSlideDuration, slides]);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -94,11 +127,7 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  const slide = slides[currentSlide];
-
-  const groupMatches = matches.filter(m => m.phase === 'group');
-  const eliminationMatches = matches.filter(m => m.phase !== 'group');
-  const phases = phaseOrder.filter(p => eliminationMatches.some(m => m.phase === p));
+  const slide = slides[currentSlide % slides.length];
 
   // Winner
   const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
@@ -106,17 +135,21 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
     ? (finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2)
     : null;
 
-  // Slide label for header
+  // Slide label
   const slideLabel = slide.type === 'groups'
     ? '📊 Grupe'
     : slide.type === 'matches'
-      ? `⚔️ Mečevi — Grupa ${slide.groups.join(' & ')}`
+      ? `⚔️ Mečevi — Grupa ${slide.groups.join(' & ')}${slide.totalPages > 1 ? ` (${slide.page + 1}/${slide.totalPages})` : ''}`
       : '🏆 Eliminacije';
+
+  // Adaptive sizing based on team count
+  const isCompactGroups = maxTeamsPerGroup > 7;
+  const isVeryCompactGroups = maxTeamsPerGroup > 9;
 
   return (
     <div className="h-screen bg-[#0a0f0d] text-white p-5 flex flex-col overflow-hidden">
-      {/* Header — compact */}
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <div className="flex items-center gap-5">
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">
             {tournament.name}
@@ -129,16 +162,14 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
           <span className="text-xl text-white/40 font-medium">{slideLabel}</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Slide dots */}
           <div className="flex gap-1.5 mr-2">
             {slides.map((s, i) => (
               <button
                 key={i}
                 onClick={() => { setCurrentSlide(i); setAutoRotate(false); }}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  i === currentSlide ? 'bg-amber-400 scale-110' : 'bg-white/15 hover:bg-white/30'
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  i === currentSlide ? 'bg-amber-400 scale-125' : 'bg-white/15 hover:bg-white/30'
                 }`}
-                title={s.type === 'groups' ? 'Grupe' : s.type === 'bracket' ? 'Eliminacije' : `Mečevi ${s.groups.join('+')}`}
               />
             ))}
           </div>
@@ -163,7 +194,7 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
 
       {/* Progress bar */}
       {autoRotate && (
-        <div className="h-1 bg-white/5 rounded-full mb-3 flex-shrink-0 overflow-hidden">
+        <div className="h-1 bg-white/5 rounded-full mb-2 flex-shrink-0 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-none"
             style={{ width: `${progress}%` }}
@@ -171,32 +202,32 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
         </div>
       )}
 
-      {/* Content — fills remaining screen */}
+      {/* Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
 
         {/* =================== GROUPS =================== */}
         {slide.type === 'groups' && (
-          <div className="grid grid-cols-2 gap-5 h-full animate-fade-in">
+          <div className="grid grid-cols-2 gap-4 h-full animate-fade-in">
             {groups.map(group => {
               const color = getGroupColor(group);
               const standings = calculateStandings(teams, matches, group);
               return (
                 <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col`}>
-                  <div className={`bg-gradient-to-r ${color.gradient} px-6 py-3 flex items-center gap-3`}>
-                    <span className={`w-4 h-4 rounded-full ${color.dot}`} />
-                    <h3 className="text-2xl font-bold text-white">Grupa {group}</h3>
+                  <div className={`bg-gradient-to-r ${color.gradient} ${isVeryCompactGroups ? 'px-4 py-1.5' : 'px-5 py-2'} flex items-center gap-2`}>
+                    <span className={`${isVeryCompactGroups ? 'w-3 h-3' : 'w-4 h-4'} rounded-full ${color.dot}`} />
+                    <h3 className={`${isVeryCompactGroups ? 'text-lg' : 'text-2xl'} font-bold text-white`}>Grupa {group}</h3>
                   </div>
                   <table className="w-full flex-1">
                     <thead>
                       <tr className="border-b border-white/10">
-                        <th className="px-4 py-3 text-left text-emerald-300/50 font-medium text-lg w-10">#</th>
-                        <th className="px-4 py-3 text-left text-emerald-300/50 font-medium text-lg">Ekipa</th>
-                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">OM</th>
-                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">P</th>
-                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">I</th>
-                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">D:P</th>
-                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">+/-</th>
-                        <th className="px-4 py-3 text-center text-emerald-300/50 font-bold text-lg">Bod</th>
+                        <th className={`px-3 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-left text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'} w-8`}>#</th>
+                        <th className={`px-3 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-left text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>Ekipa</th>
+                        <th className={`px-2 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-center text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>OM</th>
+                        <th className={`px-2 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-center text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>P</th>
+                        <th className={`px-2 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-center text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>I</th>
+                        <th className={`px-2 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-center text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>D:P</th>
+                        <th className={`px-2 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-center text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>+/-</th>
+                        <th className={`px-2 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-center text-emerald-300/50 font-bold ${isVeryCompactGroups ? 'text-sm' : 'text-base'}`}>Bod</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -205,8 +236,8 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                           key={s.team.id}
                           className={`border-t border-white/5 ${i < qualifyCount ? 'bg-emerald-500/5' : ''}`}
                         >
-                          <td className="px-4 py-2.5">
-                            <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-base font-bold ${
+                          <td className={`px-3 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'}`}>
+                            <span className={`inline-flex items-center justify-center ${isVeryCompactGroups ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
                               i < qualifyCount
                                 ? (i === 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300')
                                 : 'bg-white/5 text-white/40'
@@ -214,18 +245,18 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                               {i + 1}
                             </span>
                           </td>
-                          <td className="px-4 py-2.5 font-bold text-white text-xl">{s.team.name}</td>
-                          <td className="px-4 py-2.5 text-center text-white/60 text-xl">{s.played}</td>
-                          <td className="px-4 py-2.5 text-center text-green-400 text-xl font-semibold">{s.wins}</td>
-                          <td className="px-4 py-2.5 text-center text-red-400 text-xl font-semibold">{s.losses}</td>
-                          <td className="px-4 py-2.5 text-center text-white/60 text-xl">{s.scored}:{s.conceded}</td>
-                          <td className="px-4 py-2.5 text-center text-xl">
+                          <td className={`px-3 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} font-bold text-white ${isVeryCompactGroups ? 'text-base' : isCompactGroups ? 'text-lg' : 'text-xl'}`}>{s.team.name}</td>
+                          <td className={`px-2 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} text-center text-white/60 ${isVeryCompactGroups ? 'text-base' : 'text-xl'}`}>{s.played}</td>
+                          <td className={`px-2 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} text-center text-green-400 font-semibold ${isVeryCompactGroups ? 'text-base' : 'text-xl'}`}>{s.wins}</td>
+                          <td className={`px-2 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} text-center text-red-400 font-semibold ${isVeryCompactGroups ? 'text-base' : 'text-xl'}`}>{s.losses}</td>
+                          <td className={`px-2 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} text-center text-white/60 ${isVeryCompactGroups ? 'text-base' : 'text-xl'}`}>{s.scored}:{s.conceded}</td>
+                          <td className={`px-2 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} text-center ${isVeryCompactGroups ? 'text-base' : 'text-xl'}`}>
                             <span className={s.diff > 0 ? 'text-green-400 font-semibold' : s.diff < 0 ? 'text-red-400 font-semibold' : 'text-white/40'}>
                               {s.diff > 0 ? '+' : ''}{s.diff}
                             </span>
                           </td>
-                          <td className="px-4 py-2.5 text-center">
-                            <span className="font-extrabold text-white bg-white/10 px-3 py-1 rounded-lg text-2xl">{s.points}</span>
+                          <td className={`px-2 ${isVeryCompactGroups ? 'py-0.5' : isCompactGroups ? 'py-1' : 'py-2'} text-center`}>
+                            <span className={`font-extrabold text-white bg-white/10 px-2 py-0.5 rounded-lg ${isVeryCompactGroups ? 'text-lg' : 'text-2xl'}`}>{s.points}</span>
                           </td>
                         </tr>
                       ))}
@@ -237,71 +268,66 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
           </div>
         )}
 
-        {/* =================== MATCHES (2 groups at a time) =================== */}
+        {/* =================== MATCHES (paginated) =================== */}
         {slide.type === 'matches' && (
-          <div className={`grid ${slide.groups.length === 2 ? 'grid-cols-2' : 'grid-cols-1'} gap-5 h-full animate-fade-in`}>
+          <div className={`grid ${slide.groups.length === 2 ? 'grid-cols-2' : 'grid-cols-1'} gap-4 h-full animate-fade-in`}>
             {slide.groups.map(group => {
               const color = getGroupColor(group);
-              const gMatches = groupMatches.filter(m => m.group_label === group);
-              const inProgress = gMatches.filter(m => m.status === 'in_progress');
-              const pending = gMatches.filter(m => m.status === 'pending');
-              const finished = gMatches.filter(m => m.status === 'finished');
-              const sorted = [...inProgress, ...pending, ...finished];
+              const sorted = sortedMatchesForGroup(group);
+              const totalForGroup = sorted.length;
+              const pageMatches = sorted.slice(slide.page * MATCHES_PER_PAGE, (slide.page + 1) * MATCHES_PER_PAGE);
+              const finished = sorted.filter(m => m.status === 'finished').length;
 
               return (
                 <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col`}>
-                  <div className={`bg-gradient-to-r ${color.gradient} px-6 py-3 flex items-center justify-between`}>
+                  <div className={`bg-gradient-to-r ${color.gradient} px-6 py-2 flex items-center justify-between flex-shrink-0`}>
                     <div className="flex items-center gap-3">
                       <span className={`w-4 h-4 rounded-full ${color.dot}`} />
                       <h3 className="text-2xl font-bold text-white">Grupa {group}</h3>
                     </div>
                     <span className="text-white/70 text-lg font-medium">
-                      {finished.length}/{gMatches.length} završeno
+                      {finished}/{totalForGroup} završeno
                     </span>
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <table className="w-full">
-                      <tbody>
-                        {sorted.map(match => {
-                          const isLive = match.status === 'in_progress';
-                          const isDone = match.status === 'finished';
-                          const t1Won = isDone && match.score1 !== null && match.score2 !== null && match.score1 > match.score2;
-                          const t2Won = isDone && match.score1 !== null && match.score2 !== null && match.score2 > match.score1;
+                  <div className="flex-1 flex flex-col justify-around py-1">
+                    {pageMatches.map(match => {
+                      const isLive = match.status === 'in_progress';
+                      const isDone = match.status === 'finished';
+                      const t1Won = isDone && match.score1 !== null && match.score2 !== null && match.score1 > match.score2;
+                      const t2Won = isDone && match.score1 !== null && match.score2 !== null && match.score2 > match.score1;
 
-                          return (
-                            <tr
-                              key={match.id}
-                              className={`border-b border-white/5 ${isLive ? 'bg-yellow-500/10' : ''}`}
-                            >
-                              <td className={`py-3 px-4 text-right font-semibold truncate max-w-[240px] text-xl ${
-                                t1Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/60' : 'text-white'
-                              }`}>
-                                {match.team1?.name || 'TBD'}
-                              </td>
-                              <td className="py-3 px-3 text-center whitespace-nowrap w-36">
-                                {isLive && <span className="inline-block w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse mr-2" />}
-                                <span className={`text-2xl font-extrabold ${
-                                  isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
-                                }`}>
-                                  {match.score1 !== null ? match.score1 : '-'}
-                                </span>
-                                <span className="text-white/20 mx-1.5 text-xl">:</span>
-                                <span className={`text-2xl font-extrabold ${
-                                  isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
-                                }`}>
-                                  {match.score2 !== null ? match.score2 : '-'}
-                                </span>
-                              </td>
-                              <td className={`py-3 px-4 text-left font-semibold truncate max-w-[240px] text-xl ${
-                                t2Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/60' : 'text-white'
-                              }`}>
-                                {match.team2?.name || 'TBD'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                      return (
+                        <div
+                          key={match.id}
+                          className={`flex items-center px-4 ${isLive ? 'bg-yellow-500/10' : ''} border-b border-white/[0.03]`}
+                        >
+                          <span className={`flex-1 text-right font-semibold truncate text-xl py-2 ${
+                            t1Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/50' : 'text-white'
+                          }`}>
+                            {match.team1?.name || 'TBD'}
+                          </span>
+                          <div className="px-4 text-center whitespace-nowrap w-36 flex items-center justify-center">
+                            {isLive && <span className="inline-block w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse mr-2" />}
+                            <span className={`text-2xl font-extrabold ${
+                              isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
+                            }`}>
+                              {match.score1 !== null ? match.score1 : '-'}
+                            </span>
+                            <span className="text-white/20 mx-1.5">:</span>
+                            <span className={`text-2xl font-extrabold ${
+                              isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
+                            }`}>
+                              {match.score2 !== null ? match.score2 : '-'}
+                            </span>
+                          </div>
+                          <span className={`flex-1 text-left font-semibold truncate text-xl py-2 ${
+                            t2Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/50' : 'text-white'
+                          }`}>
+                            {match.team2?.name || 'TBD'}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -319,7 +345,6 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
 
               const isFinal = phase === 'final';
               const isSemi = phase === 'semifinal';
-              // Compact padding when many matches (round_of_16 = 8 matches)
               const isCompact = phaseMatches.length > 4;
 
               return (
@@ -331,7 +356,7 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                       {phaseLabels[phase]}
                     </span>
                   </div>
-                  <div className="flex flex-col justify-around flex-1 gap-1.5">
+                  <div className="flex flex-col justify-around flex-1 gap-1">
                     {phaseMatches.map(match => {
                       const isLive = match.status === 'in_progress';
                       const isDone = match.status === 'finished';
@@ -347,7 +372,6 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                               : 'border-white/10 bg-white/[0.02]'
                           }`}
                         >
-                          {/* Team 1 */}
                           <div className={`flex items-center justify-between ${isCompact ? 'px-3 py-1' : 'px-4 py-2'} border-b border-white/5 ${
                             t1Won ? 'bg-amber-500/10' : ''
                           }`}>
@@ -366,7 +390,6 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                               {match.score1 !== null ? match.score1 : '-'}
                             </span>
                           </div>
-                          {/* Team 2 */}
                           <div className={`flex items-center justify-between ${isCompact ? 'px-3 py-1' : 'px-4 py-2'} ${
                             t2Won ? 'bg-amber-500/10' : ''
                           }`}>
