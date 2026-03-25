@@ -51,6 +51,11 @@ export async function drawGroups(tournamentId: string) {
 
   if (tErr) throw tErr;
 
+  // Guard: only allow draw in draft status
+  if (tournament.status !== 'draft') {
+    throw new Error('Zreb je vec obavljen — turnir nije u draft fazi');
+  }
+
   // Get all teams
   const { data: teams, error: teamsErr } = await supabase
     .from('teams')
@@ -269,8 +274,39 @@ export async function generateEliminationBracket(tournamentId: string) {
 
   if (tErr) throw tErr;
 
+  // Guard: only allow advance from group_phase
+  if (tournament.status !== 'group_phase') {
+    throw new Error('Turnir nije u grupnoj fazi — eliminacije su vec generisane ili turnir nije poceo');
+  }
+
+  // Guard: check if elimination matches already exist
+  const { data: existingElim, error: eErr } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('tournament_id', tournamentId)
+    .neq('phase', 'group')
+    .limit(1);
+
+  if (eErr) throw eErr;
+  if (existingElim && existingElim.length > 0) {
+    throw new Error('Eliminacioni mecevi vec postoje');
+  }
+
   const groups = getGroupLabels();
   const teamCount = tournament.team_count;
+
+  // Verify ALL group matches are finished before advancing
+  const { data: unfinishedMatches, error: umErr } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('tournament_id', tournamentId)
+    .eq('phase', 'group')
+    .neq('status', 'finished');
+
+  if (umErr) throw umErr;
+  if (unfinishedMatches && unfinishedMatches.length > 0) {
+    throw new Error(`Nije moguce napredovati — ${unfinishedMatches.length} grupnih meceva jos nije zavrseno`);
+  }
 
   // Determine how many qualify from each group
   let qualifyPerGroup: number;
@@ -451,6 +487,12 @@ export async function advanceWinner(matchId: string) {
   // If bracket_position is odd, winner goes to team1; if even, team2
   const isTeam1Slot = match.bracket_position! % 2 === 1;
 
+  // Idempotency: check if winner is already placed in the correct slot
+  const currentSlotValue = isTeam1Slot ? nextMatch.team1_id : nextMatch.team2_id;
+  if (currentSlotValue === winnerId) {
+    return { winnerId, isFinal: false };
+  }
+
   const { error: updateErr } = await supabase
     .from('matches')
     .update(isTeam1Slot ? { team1_id: winnerId } : { team2_id: winnerId })
@@ -460,8 +502,59 @@ export async function advanceWinner(matchId: string) {
   return { winnerId, isFinal: false };
 }
 
-// Reset match to pending
+// Reset match to pending (cascade: remove winner from next bracket match)
 export async function resetMatch(matchId: string) {
+  const { data: match, error: fetchErr } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('id', matchId)
+    .single();
+
+  if (fetchErr) throw fetchErr;
+
+  // For elimination matches, remove the winner from the next round
+  if (match.phase !== 'group' && match.bracket_position) {
+    const nextPhase = getNextPhase(match.phase);
+    if (nextPhase) {
+      const nextPosition = Math.ceil(match.bracket_position / 2);
+      const isTeam1Slot = match.bracket_position % 2 === 1;
+
+      const { data: nextMatches } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('tournament_id', match.tournament_id)
+        .eq('phase', nextPhase)
+        .eq('bracket_position', nextPosition);
+
+      if (nextMatches && nextMatches.length > 0) {
+        const nextMatch = nextMatches[0];
+
+        // Only clear if the next match hasn't been played yet
+        if (nextMatch.status !== 'finished') {
+          // Recursively reset the next match first if it has scores
+          if (nextMatch.status === 'in_progress' || nextMatch.score1 !== null) {
+            await resetMatch(nextMatch.id);
+          }
+
+          await supabase
+            .from('matches')
+            .update(isTeam1Slot ? { team1_id: null } : { team2_id: null })
+            .eq('id', nextMatch.id);
+        } else {
+          throw new Error('Ne mozete resetovati mec ciji pobjednik je vec odigrao sljedeci mec');
+        }
+      }
+    }
+
+    // If tournament was marked finished (final was reset), revert to elimination
+    if (match.phase === 'final') {
+      await supabase
+        .from('tournaments')
+        .update({ status: 'elimination' })
+        .eq('id', match.tournament_id);
+    }
+  }
+
   const { data, error } = await supabase
     .from('matches')
     .update({ score1: null, score2: null, status: 'pending' })

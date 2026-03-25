@@ -29,13 +29,36 @@ export async function PUT(
   }
 }
 
-// DELETE /api/teams/[id] — delete team
+// DELETE /api/teams/[id] — delete team (only in draft phase)
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   try {
+    // Fetch team to get tournament_id
+    const { data: team, error: teamErr } = await supabase
+      .from('teams')
+      .select('tournament_id')
+      .eq('id', id)
+      .single();
+    if (teamErr) throw teamErr;
+
+    // Check tournament is still in draft
+    const { data: tournament, error: tErr } = await supabase
+      .from('tournaments')
+      .select('status')
+      .eq('id', team.tournament_id)
+      .single();
+    if (tErr) throw tErr;
+
+    if (tournament.status !== 'draft') {
+      return NextResponse.json(
+        { error: 'Ekipa se moze obrisati samo dok je turnir u draft fazi' },
+        { status: 400 }
+      );
+    }
+
     const { error } = await supabase
       .from('teams')
       .delete()

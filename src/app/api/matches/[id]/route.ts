@@ -26,6 +26,12 @@ export async function PUT(
     return NextResponse.json({ error: 'Rezultat je obavezan' }, { status: 400 });
   }
 
+  if (typeof score1 !== 'number' || typeof score2 !== 'number' ||
+      !Number.isInteger(score1) || !Number.isInteger(score2) ||
+      score1 < 0 || score2 < 0) {
+    return NextResponse.json({ error: 'Rezultat mora biti cijeli pozitivni broj' }, { status: 400 });
+  }
+
   if (matchStatus === 'finished' && score1 === score2) {
     return NextResponse.json({ error: 'Mec ne moze zavrsiti nerijeseno' }, { status: 400 });
   }
