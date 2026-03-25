@@ -311,85 +311,87 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
 
         {/* =================== BRACKET =================== */}
         {slide.type === 'bracket' && (
-          <div className="h-full flex items-center justify-center animate-fade-in">
-            <div className="flex gap-10 items-center">
-              {phases.map(phase => {
-                const phaseMatches = eliminationMatches
-                  .filter(m => m.phase === phase)
-                  .sort((a, b) => (a.bracket_position || 0) - (b.bracket_position || 0));
+          <div className="h-full flex items-stretch animate-fade-in gap-6">
+            {phases.map(phase => {
+              const phaseMatches = eliminationMatches
+                .filter(m => m.phase === phase)
+                .sort((a, b) => (a.bracket_position || 0) - (b.bracket_position || 0));
 
-                const isFinal = phase === 'final';
-                const isSemi = phase === 'semifinal';
+              const isFinal = phase === 'final';
+              const isSemi = phase === 'semifinal';
+              // Compact padding when many matches (round_of_16 = 8 matches)
+              const isCompact = phaseMatches.length > 4;
 
-                return (
-                  <div key={phase} className="flex flex-col items-center gap-4">
-                    <div className="text-center mb-3">
-                      <span className={`font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent ${
-                        isFinal ? 'text-4xl' : 'text-3xl'
-                      }`}>
-                        {phaseLabels[phase]}
-                      </span>
-                    </div>
-                    <div className={`flex flex-col justify-around flex-1 ${isFinal ? 'gap-5' : 'gap-4'}`}>
-                      {phaseMatches.map(match => {
-                        const isLive = match.status === 'in_progress';
-                        const isDone = match.status === 'finished';
-                        const t1Won = isDone && match.score1 !== null && match.score2 !== null && match.score1 > match.score2;
-                        const t2Won = isDone && match.score1 !== null && match.score2 !== null && match.score2 > match.score1;
-
-                        return (
-                          <div
-                            key={match.id}
-                            className={`border rounded-xl overflow-hidden ${
-                              isFinal ? 'min-w-[380px]' : isSemi ? 'min-w-[340px]' : 'min-w-[300px]'
-                            } ${
-                              isLive ? 'border-yellow-500/40 bg-yellow-500/5 animate-pulse-glow'
-                                : isDone ? 'border-emerald-700/30 bg-emerald-950/30'
-                                : 'border-white/10 bg-white/[0.02]'
-                            }`}
-                          >
-                            {/* Team 1 */}
-                            <div className={`flex items-center justify-between px-5 py-3 border-b border-white/5 ${
-                              t1Won ? 'bg-amber-500/10' : ''
-                            }`}>
-                              <span className={`font-bold truncate mr-4 ${
-                                isFinal ? 'text-2xl' : 'text-xl'
-                              } ${
-                                t1Won ? 'text-amber-300' : isDone && !t1Won ? 'text-white/40' : 'text-white'
-                              }`}>
-                                {match.team1?.name || 'TBD'}
-                              </span>
-                              <span className={`font-extrabold ${isFinal ? 'text-3xl' : 'text-2xl'} ${
-                                isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
-                              }`}>
-                                {match.score1 !== null ? match.score1 : '-'}
-                              </span>
-                            </div>
-                            {/* Team 2 */}
-                            <div className={`flex items-center justify-between px-5 py-3 ${
-                              t2Won ? 'bg-amber-500/10' : ''
-                            }`}>
-                              <span className={`font-bold truncate mr-4 ${
-                                isFinal ? 'text-2xl' : 'text-xl'
-                              } ${
-                                t2Won ? 'text-amber-300' : isDone && !t2Won ? 'text-white/40' : 'text-white'
-                              }`}>
-                                {match.team2?.name || 'TBD'}
-                              </span>
-                              <span className={`font-extrabold ${isFinal ? 'text-3xl' : 'text-2xl'} ${
-                                isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
-                              }`}>
-                                {match.score2 !== null ? match.score2 : '-'}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+              return (
+                <div key={phase} className="flex flex-col flex-1 min-w-0">
+                  <div className="text-center mb-2 flex-shrink-0">
+                    <span className={`font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent ${
+                      isFinal ? 'text-3xl' : 'text-2xl'
+                    }`}>
+                      {phaseLabels[phase]}
+                    </span>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="flex flex-col justify-around flex-1 gap-1.5">
+                    {phaseMatches.map(match => {
+                      const isLive = match.status === 'in_progress';
+                      const isDone = match.status === 'finished';
+                      const t1Won = isDone && match.score1 !== null && match.score2 !== null && match.score1 > match.score2;
+                      const t2Won = isDone && match.score1 !== null && match.score2 !== null && match.score2 > match.score1;
+
+                      return (
+                        <div
+                          key={match.id}
+                          className={`border rounded-lg overflow-hidden ${
+                            isLive ? 'border-yellow-500/40 bg-yellow-500/5 animate-pulse-glow'
+                              : isDone ? 'border-emerald-700/30 bg-emerald-950/30'
+                              : 'border-white/10 bg-white/[0.02]'
+                          }`}
+                        >
+                          {/* Team 1 */}
+                          <div className={`flex items-center justify-between ${isCompact ? 'px-3 py-1' : 'px-4 py-2'} border-b border-white/5 ${
+                            t1Won ? 'bg-amber-500/10' : ''
+                          }`}>
+                            <span className={`font-bold truncate mr-3 ${
+                              isFinal ? 'text-2xl' : isSemi ? 'text-xl' : isCompact ? 'text-base' : 'text-lg'
+                            } ${
+                              t1Won ? 'text-amber-300' : isDone && !t1Won ? 'text-white/40' : 'text-white'
+                            }`}>
+                              {match.team1?.name || 'TBD'}
+                            </span>
+                            <span className={`font-extrabold flex-shrink-0 ${
+                              isFinal ? 'text-3xl' : isSemi ? 'text-2xl' : isCompact ? 'text-xl' : 'text-2xl'
+                            } ${
+                              isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
+                            }`}>
+                              {match.score1 !== null ? match.score1 : '-'}
+                            </span>
+                          </div>
+                          {/* Team 2 */}
+                          <div className={`flex items-center justify-between ${isCompact ? 'px-3 py-1' : 'px-4 py-2'} ${
+                            t2Won ? 'bg-amber-500/10' : ''
+                          }`}>
+                            <span className={`font-bold truncate mr-3 ${
+                              isFinal ? 'text-2xl' : isSemi ? 'text-xl' : isCompact ? 'text-base' : 'text-lg'
+                            } ${
+                              t2Won ? 'text-amber-300' : isDone && !t2Won ? 'text-white/40' : 'text-white'
+                            }`}>
+                              {match.team2?.name || 'TBD'}
+                            </span>
+                            <span className={`font-extrabold flex-shrink-0 ${
+                              isFinal ? 'text-3xl' : isSemi ? 'text-2xl' : isCompact ? 'text-xl' : 'text-2xl'
+                            } ${
+                              isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
+                            }`}>
+                              {match.score2 !== null ? match.score2 : '-'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
