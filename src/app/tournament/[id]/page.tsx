@@ -10,6 +10,7 @@ import Bracket from '@/components/Bracket';
 import CardSuits from '@/components/CardSuits';
 import { supabase } from '@/lib/supabase';
 import { getGroupColor } from '@/lib/groupColors';
+import ProjectorView from '@/components/ProjectorView';
 
 interface TournamentData {
   tournament: Tournament;
@@ -76,8 +77,10 @@ function getQualifyCount(teamCount: number): number {
   return 1;
 }
 
-export default function TournamentPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TournamentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ view?: string }> }) {
   const { id } = use(params);
+  const { view } = use(searchParams);
+  const isProjector = view === 'projector';
   const [data, setData] = useState<TournamentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'groups' | 'matches' | 'bracket'>('groups');
@@ -193,6 +196,19 @@ export default function TournamentPage({ params }: { params: Promise<{ id: strin
   );
 
   const { tournament, teams, matches } = data;
+
+  if (isProjector) {
+    return (
+      <ProjectorView
+        tournament={tournament}
+        teams={teams}
+        matches={matches}
+        calculateStandings={calculateStandingsLocal}
+        qualifyCount={getQualifyCount(tournament.team_count || teams.length)}
+      />
+    );
+  }
+
   const groups = [...new Set(teams.map(t => t.group_label).filter(Boolean))].sort() as string[];
   const groupMatches = matches.filter(m => m.phase === 'group');
 
