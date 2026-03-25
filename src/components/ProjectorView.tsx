@@ -21,28 +21,62 @@ const phaseLabels: Record<string, string> = {
 
 const phaseOrder = ['round_of_16', 'quarterfinal', 'semifinal', 'final'] as const;
 
+// Split groups into pairs for match rotation: [['A','B'], ['C','D']]
+function groupPairs(groups: string[]): string[][] {
+  const pairs: string[][] = [];
+  for (let i = 0; i < groups.length; i += 2) {
+    pairs.push(groups.slice(i, i + 2));
+  }
+  return pairs;
+}
+
 export default function ProjectorView({ tournament, teams, matches, calculateStandings, qualifyCount }: ProjectorViewProps) {
   const groups = [...new Set(teams.map(t => t.group_label).filter(Boolean))].sort() as string[];
   const isElimination = tournament.status === 'elimination' || tournament.status === 'finished';
 
-  const availableTabs: ('groups' | 'matches' | 'bracket')[] = [
-    'groups',
-    'matches',
-    ...(isElimination ? ['bracket' as const] : []),
-  ];
+  // Build slides: groups (1 slide), match pairs (N slides), bracket (1 slide if elimination)
+  type Slide = { type: 'groups' } | { type: 'matches'; groups: string[] } | { type: 'bracket' };
+  const slides: Slide[] = [];
+  slides.push({ type: 'groups' });
+  const matchPairs = groupPairs(groups);
+  for (const pair of matchPairs) {
+    slides.push({ type: 'matches', groups: pair });
+  }
+  if (isElimination) {
+    slides.push({ type: 'bracket' });
+  }
 
-  const [currentTab, setCurrentTab] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [autoRotate, setAutoRotate] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Auto-rotate tabs every 12 seconds
+  // Slide durations: groups 15s, matches 20s, bracket 15s
+  const getSlideDuration = (slide: Slide) => {
+    if (slide.type === 'matches') return 20000;
+    return 15000;
+  };
+
+  const [progress, setProgress] = useState(0);
+
   useEffect(() => {
-    if (!autoRotate) return;
-    const interval = setInterval(() => {
-      setCurrentTab(prev => (prev + 1) % availableTabs.length);
-    }, 12000);
-    return () => clearInterval(interval);
-  }, [autoRotate, availableTabs.length]);
+    if (!autoRotate) { setProgress(0); return; }
+    const duration = getSlideDuration(slides[currentSlide]);
+    setProgress(0);
+    const start = Date.now();
+    let raf: number;
+    const frame = () => {
+      const elapsed = Date.now() - start;
+      setProgress(Math.min((elapsed / duration) * 100, 100));
+      if (elapsed < duration) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+
+    const timeout = setTimeout(() => {
+      setCurrentSlide(prev => (prev + 1) % slides.length);
+    }, duration);
+
+    return () => { clearTimeout(timeout); cancelAnimationFrame(raf); };
+  }, [currentSlide, autoRotate, slides.length]);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -60,39 +94,31 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
     return () => document.removeEventListener('fullscreenchange', handler);
   }, []);
 
-  const activeTab = availableTabs[currentTab];
+  const slide = slides[currentSlide];
 
   const groupMatches = matches.filter(m => m.phase === 'group');
   const eliminationMatches = matches.filter(m => m.phase !== 'group');
   const phases = phaseOrder.filter(p => eliminationMatches.some(m => m.phase === p));
 
-  // Progress bar for auto-rotate
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    if (!autoRotate) { setProgress(0); return; }
-    setProgress(0);
-    const start = Date.now();
-    const duration = 12000;
-    const frame = () => {
-      const elapsed = Date.now() - start;
-      setProgress(Math.min((elapsed / duration) * 100, 100));
-      if (elapsed < duration) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  }, [currentTab, autoRotate]);
-
-  // Winner display
+  // Winner
   const finalMatch = matches.find(m => m.phase === 'final' && m.status === 'finished');
   const winner = finalMatch && finalMatch.score1 !== null && finalMatch.score2 !== null
     ? (finalMatch.score1 > finalMatch.score2 ? finalMatch.team1 : finalMatch.team2)
     : null;
 
+  // Slide label for header
+  const slideLabel = slide.type === 'groups'
+    ? '📊 Grupe'
+    : slide.type === 'matches'
+      ? `⚔️ Mečevi — Grupa ${slide.groups.join(' & ')}`
+      : '🏆 Eliminacije';
+
   return (
-    <div className="min-h-screen bg-[#0a0f0d] text-white p-6 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <h1 className="text-4xl font-extrabold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">
+    <div className="h-screen bg-[#0a0f0d] text-white p-5 flex flex-col overflow-hidden">
+      {/* Header — compact */}
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
+        <div className="flex items-center gap-5">
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">
             {tournament.name}
           </h1>
           {winner && (
@@ -100,47 +126,44 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
               🏆 {winner.name}
             </span>
           )}
+          <span className="text-xl text-white/40 font-medium">{slideLabel}</span>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Tab indicators */}
-          <div className="flex gap-2">
-            {availableTabs.map((tab, i) => (
+        <div className="flex items-center gap-2">
+          {/* Slide dots */}
+          <div className="flex gap-1.5 mr-2">
+            {slides.map((s, i) => (
               <button
-                key={tab}
-                onClick={() => { setCurrentTab(i); setAutoRotate(false); }}
-                className={`px-4 py-2 rounded-lg text-lg font-bold transition-all ${
-                  i === currentTab
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-white/30 hover:text-white/60'
+                key={i}
+                onClick={() => { setCurrentSlide(i); setAutoRotate(false); }}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  i === currentSlide ? 'bg-amber-400 scale-110' : 'bg-white/15 hover:bg-white/30'
                 }`}
-              >
-                {tab === 'groups' ? '📊 Grupe' : tab === 'matches' ? '⚔️ Mečevi' : '🏆 Eliminacije'}
-              </button>
+                title={s.type === 'groups' ? 'Grupe' : s.type === 'bracket' ? 'Eliminacije' : `Mečevi ${s.groups.join('+')}`}
+              />
             ))}
           </div>
           <button
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
               autoRotate
                 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/20'
                 : 'bg-white/5 text-white/30 border-white/10'
             }`}
-            title={autoRotate ? 'Auto-rotacija uključena' : 'Auto-rotacija isključena'}
           >
-            {autoRotate ? '⏩ Auto' : '⏸ Pauza'}
+            {autoRotate ? '⏩' : '⏸'}
           </button>
           <button
             onClick={toggleFullscreen}
-            className="px-3 py-2 rounded-lg text-sm font-medium bg-white/5 text-white/40 border border-white/10 hover:text-white/70 transition-all"
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white/5 text-white/40 border border-white/10 hover:text-white/70 transition-all"
           >
-            {isFullscreen ? '⬜ Izađi' : '⛶ Fullscreen'}
+            {isFullscreen ? '⬜' : '⛶'}
           </button>
         </div>
       </div>
 
       {/* Progress bar */}
       {autoRotate && (
-        <div className="h-1 bg-white/5 rounded-full mb-4 flex-shrink-0 overflow-hidden">
+        <div className="h-1 bg-white/5 rounded-full mb-3 flex-shrink-0 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-none"
             style={{ width: `${progress}%` }}
@@ -148,31 +171,32 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
         </div>
       )}
 
-      {/* Content */}
+      {/* Content — fills remaining screen */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {/* GROUPS TAB */}
-        {activeTab === 'groups' && (
-          <div className="grid grid-cols-2 gap-4 h-full animate-fade-in">
+
+        {/* =================== GROUPS =================== */}
+        {slide.type === 'groups' && (
+          <div className="grid grid-cols-2 gap-5 h-full animate-fade-in">
             {groups.map(group => {
               const color = getGroupColor(group);
               const standings = calculateStandings(teams, matches, group);
               return (
-                <div key={group} className={`border ${color.border} rounded-xl overflow-hidden flex flex-col`}>
-                  <div className={`bg-gradient-to-r ${color.gradient} px-5 py-2 flex items-center gap-2`}>
-                    <span className={`w-3 h-3 rounded-full ${color.dot}`} />
-                    <h3 className="text-xl font-bold text-white">Grupa {group}</h3>
+                <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col`}>
+                  <div className={`bg-gradient-to-r ${color.gradient} px-6 py-3 flex items-center gap-3`}>
+                    <span className={`w-4 h-4 rounded-full ${color.dot}`} />
+                    <h3 className="text-2xl font-bold text-white">Grupa {group}</h3>
                   </div>
-                  <table className="w-full text-base flex-1">
+                  <table className="w-full flex-1">
                     <thead>
                       <tr className="border-b border-white/10">
-                        <th className="px-3 py-2 text-left text-emerald-300/50 font-medium w-8">#</th>
-                        <th className="px-3 py-2 text-left text-emerald-300/50 font-medium">Ekipa</th>
-                        <th className="px-3 py-2 text-center text-emerald-300/50 font-medium">OM</th>
-                        <th className="px-3 py-2 text-center text-emerald-300/50 font-medium">P</th>
-                        <th className="px-3 py-2 text-center text-emerald-300/50 font-medium">I</th>
-                        <th className="px-3 py-2 text-center text-emerald-300/50 font-medium">D:P</th>
-                        <th className="px-3 py-2 text-center text-emerald-300/50 font-medium">+/-</th>
-                        <th className="px-3 py-2 text-center text-emerald-300/50 font-bold">Bod</th>
+                        <th className="px-4 py-3 text-left text-emerald-300/50 font-medium text-lg w-10">#</th>
+                        <th className="px-4 py-3 text-left text-emerald-300/50 font-medium text-lg">Ekipa</th>
+                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">OM</th>
+                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">P</th>
+                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">I</th>
+                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">D:P</th>
+                        <th className="px-4 py-3 text-center text-emerald-300/50 font-medium text-lg">+/-</th>
+                        <th className="px-4 py-3 text-center text-emerald-300/50 font-bold text-lg">Bod</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -181,8 +205,8 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                           key={s.team.id}
                           className={`border-t border-white/5 ${i < qualifyCount ? 'bg-emerald-500/5' : ''}`}
                         >
-                          <td className="px-3 py-1.5">
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${
+                          <td className="px-4 py-2.5">
+                            <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full text-base font-bold ${
                               i < qualifyCount
                                 ? (i === 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300')
                                 : 'bg-white/5 text-white/40'
@@ -190,18 +214,18 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                               {i + 1}
                             </span>
                           </td>
-                          <td className="px-3 py-1.5 font-semibold text-white text-lg">{s.team.name}</td>
-                          <td className="px-3 py-1.5 text-center text-white/60">{s.played}</td>
-                          <td className="px-3 py-1.5 text-center text-green-400">{s.wins}</td>
-                          <td className="px-3 py-1.5 text-center text-red-400">{s.losses}</td>
-                          <td className="px-3 py-1.5 text-center text-white/60">{s.scored}:{s.conceded}</td>
-                          <td className="px-3 py-1.5 text-center">
-                            <span className={s.diff > 0 ? 'text-green-400' : s.diff < 0 ? 'text-red-400' : 'text-white/40'}>
+                          <td className="px-4 py-2.5 font-bold text-white text-xl">{s.team.name}</td>
+                          <td className="px-4 py-2.5 text-center text-white/60 text-xl">{s.played}</td>
+                          <td className="px-4 py-2.5 text-center text-green-400 text-xl font-semibold">{s.wins}</td>
+                          <td className="px-4 py-2.5 text-center text-red-400 text-xl font-semibold">{s.losses}</td>
+                          <td className="px-4 py-2.5 text-center text-white/60 text-xl">{s.scored}:{s.conceded}</td>
+                          <td className="px-4 py-2.5 text-center text-xl">
+                            <span className={s.diff > 0 ? 'text-green-400 font-semibold' : s.diff < 0 ? 'text-red-400 font-semibold' : 'text-white/40'}>
                               {s.diff > 0 ? '+' : ''}{s.diff}
                             </span>
                           </td>
-                          <td className="px-3 py-1.5 text-center">
-                            <span className="font-bold text-white bg-white/10 px-2 py-0.5 rounded-lg text-lg">{s.points}</span>
+                          <td className="px-4 py-2.5 text-center">
+                            <span className="font-extrabold text-white bg-white/10 px-3 py-1 rounded-lg text-2xl">{s.points}</span>
                           </td>
                         </tr>
                       ))}
@@ -213,30 +237,29 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
           </div>
         )}
 
-        {/* MATCHES TAB */}
-        {activeTab === 'matches' && (
-          <div className="grid grid-cols-2 gap-4 h-full animate-fade-in">
-            {groups.map(group => {
+        {/* =================== MATCHES (2 groups at a time) =================== */}
+        {slide.type === 'matches' && (
+          <div className={`grid ${slide.groups.length === 2 ? 'grid-cols-2' : 'grid-cols-1'} gap-5 h-full animate-fade-in`}>
+            {slide.groups.map(group => {
               const color = getGroupColor(group);
               const gMatches = groupMatches.filter(m => m.group_label === group);
               const inProgress = gMatches.filter(m => m.status === 'in_progress');
               const pending = gMatches.filter(m => m.status === 'pending');
               const finished = gMatches.filter(m => m.status === 'finished');
-              // Show active first, then pending, then finished
               const sorted = [...inProgress, ...pending, ...finished];
 
               return (
-                <div key={group} className={`border ${color.border} rounded-xl overflow-hidden flex flex-col`}>
-                  <div className={`bg-gradient-to-r ${color.gradient} px-5 py-2 flex items-center justify-between`}>
-                    <div className="flex items-center gap-2">
-                      <span className={`w-3 h-3 rounded-full ${color.dot}`} />
-                      <h3 className="text-xl font-bold text-white">Grupa {group}</h3>
+                <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col`}>
+                  <div className={`bg-gradient-to-r ${color.gradient} px-6 py-3 flex items-center justify-between`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`w-4 h-4 rounded-full ${color.dot}`} />
+                      <h3 className="text-2xl font-bold text-white">Grupa {group}</h3>
                     </div>
-                    <span className="text-white/60 text-sm">
+                    <span className="text-white/70 text-lg font-medium">
                       {finished.length}/{gMatches.length} završeno
                     </span>
                   </div>
-                  <div className="flex-1 overflow-y-auto px-1 py-1">
+                  <div className="flex-1 overflow-y-auto">
                     <table className="w-full">
                       <tbody>
                         {sorted.map(match => {
@@ -248,31 +271,29 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                           return (
                             <tr
                               key={match.id}
-                              className={`border-b border-white/5 ${
-                                isLive ? 'bg-yellow-500/10' : ''
-                              }`}
+                              className={`border-b border-white/5 ${isLive ? 'bg-yellow-500/10' : ''}`}
                             >
-                              <td className={`py-2 px-3 text-right text-base font-medium truncate max-w-[180px] ${
-                                t1Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/70' : 'text-white'
+                              <td className={`py-3 px-4 text-right font-semibold truncate max-w-[240px] text-xl ${
+                                t1Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/60' : 'text-white'
                               }`}>
                                 {match.team1?.name || 'TBD'}
                               </td>
-                              <td className="py-2 px-2 text-center whitespace-nowrap w-28">
-                                {isLive && <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-1.5" />}
-                                <span className={`text-xl font-extrabold ${
+                              <td className="py-3 px-3 text-center whitespace-nowrap w-36">
+                                {isLive && <span className="inline-block w-2.5 h-2.5 bg-yellow-400 rounded-full animate-pulse mr-2" />}
+                                <span className={`text-2xl font-extrabold ${
                                   isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
                                 }`}>
                                   {match.score1 !== null ? match.score1 : '-'}
                                 </span>
-                                <span className="text-white/20 mx-1">:</span>
-                                <span className={`text-xl font-extrabold ${
+                                <span className="text-white/20 mx-1.5 text-xl">:</span>
+                                <span className={`text-2xl font-extrabold ${
                                   isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
                                 }`}>
                                   {match.score2 !== null ? match.score2 : '-'}
                                 </span>
                               </td>
-                              <td className={`py-2 px-3 text-left text-base font-medium truncate max-w-[180px] ${
-                                t2Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/70' : 'text-white'
+                              <td className={`py-3 px-4 text-left font-semibold truncate max-w-[240px] text-xl ${
+                                t2Won ? 'text-amber-300 font-bold' : isDone ? 'text-white/60' : 'text-white'
                               }`}>
                                 {match.team2?.name || 'TBD'}
                               </td>
@@ -288,25 +309,28 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
           </div>
         )}
 
-        {/* BRACKET TAB */}
-        {activeTab === 'bracket' && (
+        {/* =================== BRACKET =================== */}
+        {slide.type === 'bracket' && (
           <div className="h-full flex items-center justify-center animate-fade-in">
-            <div className="flex gap-8 items-center">
+            <div className="flex gap-10 items-center">
               {phases.map(phase => {
                 const phaseMatches = eliminationMatches
                   .filter(m => m.phase === phase)
                   .sort((a, b) => (a.bracket_position || 0) - (b.bracket_position || 0));
 
                 const isFinal = phase === 'final';
+                const isSemi = phase === 'semifinal';
 
                 return (
-                  <div key={phase} className="flex flex-col items-center gap-3">
-                    <div className="text-center mb-2">
-                      <span className="text-2xl font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">
+                  <div key={phase} className="flex flex-col items-center gap-4">
+                    <div className="text-center mb-3">
+                      <span className={`font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent ${
+                        isFinal ? 'text-4xl' : 'text-3xl'
+                      }`}>
                         {phaseLabels[phase]}
                       </span>
                     </div>
-                    <div className={`flex flex-col justify-around flex-1 ${isFinal ? 'gap-4' : 'gap-3'}`}>
+                    <div className={`flex flex-col justify-around flex-1 ${isFinal ? 'gap-5' : 'gap-4'}`}>
                       {phaseMatches.map(match => {
                         const isLive = match.status === 'in_progress';
                         const isDone = match.status === 'finished';
@@ -316,37 +340,43 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                         return (
                           <div
                             key={match.id}
-                            className={`border rounded-xl overflow-hidden ${isFinal ? 'min-w-[320px]' : 'min-w-[280px]'} ${
+                            className={`border rounded-xl overflow-hidden ${
+                              isFinal ? 'min-w-[380px]' : isSemi ? 'min-w-[340px]' : 'min-w-[300px]'
+                            } ${
                               isLive ? 'border-yellow-500/40 bg-yellow-500/5 animate-pulse-glow'
                                 : isDone ? 'border-emerald-700/30 bg-emerald-950/30'
                                 : 'border-white/10 bg-white/[0.02]'
                             }`}
                           >
                             {/* Team 1 */}
-                            <div className={`flex items-center justify-between px-4 py-2.5 border-b border-white/5 ${
+                            <div className={`flex items-center justify-between px-5 py-3 border-b border-white/5 ${
                               t1Won ? 'bg-amber-500/10' : ''
                             }`}>
-                              <span className={`font-semibold truncate mr-3 ${isFinal ? 'text-xl' : 'text-lg'} ${
-                                t1Won ? 'text-amber-300' : isDone && !t1Won ? 'text-white/50' : 'text-white'
+                              <span className={`font-bold truncate mr-4 ${
+                                isFinal ? 'text-2xl' : 'text-xl'
+                              } ${
+                                t1Won ? 'text-amber-300' : isDone && !t1Won ? 'text-white/40' : 'text-white'
                               }`}>
                                 {match.team1?.name || 'TBD'}
                               </span>
-                              <span className={`font-extrabold ${isFinal ? 'text-2xl' : 'text-xl'} ${
+                              <span className={`font-extrabold ${isFinal ? 'text-3xl' : 'text-2xl'} ${
                                 isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
                               }`}>
                                 {match.score1 !== null ? match.score1 : '-'}
                               </span>
                             </div>
                             {/* Team 2 */}
-                            <div className={`flex items-center justify-between px-4 py-2.5 ${
+                            <div className={`flex items-center justify-between px-5 py-3 ${
                               t2Won ? 'bg-amber-500/10' : ''
                             }`}>
-                              <span className={`font-semibold truncate mr-3 ${isFinal ? 'text-xl' : 'text-lg'} ${
-                                t2Won ? 'text-amber-300' : isDone && !t2Won ? 'text-white/50' : 'text-white'
+                              <span className={`font-bold truncate mr-4 ${
+                                isFinal ? 'text-2xl' : 'text-xl'
+                              } ${
+                                t2Won ? 'text-amber-300' : isDone && !t2Won ? 'text-white/40' : 'text-white'
                               }`}>
                                 {match.team2?.name || 'TBD'}
                               </span>
-                              <span className={`font-extrabold ${isFinal ? 'text-2xl' : 'text-xl'} ${
+                              <span className={`font-extrabold ${isFinal ? 'text-3xl' : 'text-2xl'} ${
                                 isLive ? 'text-yellow-400' : isDone ? 'text-white' : 'text-white/20'
                               }`}>
                                 {match.score2 !== null ? match.score2 : '-'}
