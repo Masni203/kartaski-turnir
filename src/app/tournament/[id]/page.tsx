@@ -164,6 +164,11 @@ export default function TournamentPage({ params, searchParams }: { params: Promi
   }, [fetchData]);
 
   useEffect(() => {
+    // Realtime gives instant updates (<1s). Polling is only a fallback
+    // in case the WebSocket drops. Projector gets shorter fallback (10s)
+    // since it's the primary display; viewers get longer interval (30s).
+    const pollInterval = isProjector ? 10000 : 30000;
+
     const channel = supabase
       .channel(`tournament-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `tournament_id=eq.${id}` }, () => {
@@ -176,13 +181,13 @@ export default function TournamentPage({ params, searchParams }: { params: Promi
 
     const interval = setInterval(() => {
       fetchData();
-    }, 5000);
+    }, pollInterval);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [id, fetchData]);
+  }, [id, fetchData, isProjector]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
