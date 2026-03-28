@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Tournament, Team, Match, Standing } from '@/lib/types';
 import { getGroupColor } from '@/lib/groupColors';
 
@@ -85,17 +85,22 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // Keep a ref to slides so the timer doesn't reset on every data refetch
+  const slidesRef = useRef(slides);
+  slidesRef.current = slides;
+
   // Slide durations
   const getSlideDuration = useCallback((slide: Slide) => {
     if (slide.type === 'matches') return 15000;
     return 12000;
   }, []);
 
-  // Auto-rotate
+  // Auto-rotate — only re-trigger on actual slide change or toggle, NOT on data refetch
   useEffect(() => {
-    if (!autoRotate || slides.length === 0) { setProgress(0); return; }
-    const safeIdx = currentSlide % slides.length;
-    const duration = getSlideDuration(slides[safeIdx]);
+    const currentSlides = slidesRef.current;
+    if (!autoRotate || currentSlides.length === 0) { setProgress(0); return; }
+    const safeIdx = currentSlide % currentSlides.length;
+    const duration = getSlideDuration(currentSlides[safeIdx]);
     setProgress(0);
     const start = Date.now();
     let raf: number;
@@ -106,10 +111,10 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
     };
     raf = requestAnimationFrame(frame);
     const timeout = setTimeout(() => {
-      setCurrentSlide(prev => (prev + 1) % slides.length);
+      setCurrentSlide(prev => (prev + 1) % (slidesRef.current.length || 1));
     }, duration);
     return () => { clearTimeout(timeout); cancelAnimationFrame(raf); };
-  }, [currentSlide, autoRotate, slides.length, getSlideDuration, slides]);
+  }, [currentSlide, autoRotate, getSlideDuration]);
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
