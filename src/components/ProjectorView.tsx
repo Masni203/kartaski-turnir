@@ -142,12 +142,17 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
       ? `⚔️ Mečevi — Grupa ${slide.groups.join(' & ')}${slide.totalPages > 1 ? ` (${slide.page + 1}/${slide.totalPages})` : ''}`
       : '🏆 Eliminacije';
 
-  // Adaptive sizing based on team count
-  const isCompactGroups = maxTeamsPerGroup > 7;
-  const isVeryCompactGroups = maxTeamsPerGroup > 9;
+  // How many rows in the groups grid
+  const groupRows = Math.ceil(groups.length / 2);
+
+  // Adaptive sizing based on team count AND group count
+  // With more groups stacked vertically, we need compact sizing earlier
+  const totalTeamRows = maxTeamsPerGroup * groupRows;
+  const isCompactGroups = maxTeamsPerGroup > 7 || totalTeamRows > 10;
+  const isVeryCompactGroups = maxTeamsPerGroup > 9 || totalTeamRows > 14;
 
   return (
-    <div className="h-screen bg-[#0a0f0d] text-white p-5 flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#0a0f0d] text-white px-5 py-3 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <div className="flex items-center gap-5">
@@ -207,17 +212,21 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
 
         {/* =================== GROUPS =================== */}
         {slide.type === 'groups' && (
-          <div className="grid grid-cols-2 gap-4 h-full animate-fade-in">
+          <div
+            className="grid grid-cols-2 gap-3 h-full animate-fade-in"
+            style={{ gridTemplateRows: `repeat(${groupRows}, 1fr)` }}
+          >
             {groups.map(group => {
               const color = getGroupColor(group);
               const standings = calculateStandings(teams, matches, group);
               return (
-                <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col`}>
-                  <div className={`bg-gradient-to-r ${color.gradient} ${isVeryCompactGroups ? 'px-4 py-1.5' : 'px-5 py-2'} flex items-center gap-2`}>
-                    <span className={`${isVeryCompactGroups ? 'w-3 h-3' : 'w-4 h-4'} rounded-full ${color.dot}`} />
-                    <h3 className={`${isVeryCompactGroups ? 'text-lg' : 'text-2xl'} font-bold text-white`}>Grupa {group}</h3>
+                <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col min-h-0`}>
+                  <div className={`bg-gradient-to-r ${color.gradient} ${isVeryCompactGroups ? 'px-4 py-1' : 'px-5 py-1.5'} flex items-center gap-2 flex-shrink-0`}>
+                    <span className={`${isVeryCompactGroups ? 'w-3 h-3' : 'w-3.5 h-3.5'} rounded-full ${color.dot}`} />
+                    <h3 className={`${isVeryCompactGroups ? 'text-base' : 'text-xl'} font-bold text-white`}>Grupa {group}</h3>
                   </div>
-                  <table className="w-full flex-1">
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                  <table className="w-full">
                     <thead>
                       <tr className="border-b border-white/10">
                         <th className={`px-3 ${isVeryCompactGroups ? 'py-1' : isCompactGroups ? 'py-1.5' : 'py-3'} text-left text-emerald-300/50 font-medium ${isVeryCompactGroups ? 'text-sm' : 'text-base'} w-8`}>#</th>
@@ -262,6 +271,7 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               );
             })}
