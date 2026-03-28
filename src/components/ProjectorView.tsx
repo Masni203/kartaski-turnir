@@ -22,9 +22,9 @@ const phaseLabels: Record<string, string> = {
 const phaseOrder = ['round_of_16', 'quarterfinal', 'semifinal', 'final'] as const;
 
 // How many match rows fit on half-screen (one group column)
-// 1080p: ~900px available, ~50px group header = 850px / ~52px per row ≈ 16
-// Be conservative for varying screens
-const MATCHES_PER_PAGE = 14;
+// 1080p: ~900px available, ~50px group header = 850px / ~56px per row ≈ 15
+// Keep conservative to avoid overflow — better to paginate than to cut off
+const MATCHES_PER_PAGE = 10;
 
 type Slide =
   | { type: 'groups' }
@@ -294,7 +294,7 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
               const finished = sorted.filter(m => m.status === 'finished').length;
 
               return (
-                <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col`}>
+                <div key={group} className={`border ${color.border} rounded-2xl overflow-hidden flex flex-col min-h-0`}>
                   <div className={`bg-gradient-to-r ${color.gradient} px-6 py-2 flex items-center justify-between flex-shrink-0`}>
                     <div className="flex items-center gap-3">
                       <span className={`w-4 h-4 rounded-full ${color.dot}`} />
@@ -304,7 +304,7 @@ export default function ProjectorView({ tournament, teams, matches, calculateSta
                       {finished}/{totalForGroup} završeno
                     </span>
                   </div>
-                  <div className="flex-1 flex flex-col justify-around py-1">
+                  <div className="flex-1 min-h-0 flex flex-col justify-around py-1 overflow-y-auto">
                     {pageMatches.map(match => {
                       const isLive = match.status === 'in_progress';
                       const isDone = match.status === 'finished';
