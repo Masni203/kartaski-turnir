@@ -396,7 +396,7 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
             />
 
             {tournament.status === 'finished' && (
-              <div className="text-center">
+              <div className="text-center space-y-6">
                 <div className="inline-block bg-amber-500/10 border-2 border-amber-500/20 backdrop-blur-sm rounded-2xl p-10">
                   <div className="text-5xl mb-3">🏆</div>
                   <p className="text-2xl font-bold bg-gradient-to-r from-amber-200 to-yellow-100 bg-clip-text text-transparent">Turnir zavrsen!</p>
@@ -412,6 +412,17 @@ export default function AdminTournamentPage({ params }: { params: Promise<{ id: 
                     }
                     return null;
                   })()}
+                </div>
+                <div>
+                  <a
+                    href={`/api/tournaments/${id}/recap`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 to-emerald-600 text-white px-8 py-3 rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-500 text-base transition-all shadow-lg shadow-emerald-500/20 hover:scale-105"
+                  >
+                    📋 Rezime turnira
+                  </a>
+                  <p className="text-emerald-300/30 text-xs mt-2">Otvara stranicu sa statistikama — moze se sacuvati kao PDF</p>
                 </div>
               </div>
             )}
